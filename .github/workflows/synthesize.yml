@@ -1,0 +1,115 @@
+name: Synthesize Message
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Message to synthesize'
+        required: true
+      channel:
+        description: 'Source channel (optional)'
+        required: false
+        default: 'bridge'
+      auto_plant:
+        description: 'Auto-plant dream seeds'
+        required: false
+        default: 'true'
+
+env:
+  TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+  DISCORD_WEBHOOK_GARDEN: ${{ secrets.DISCORD_WEBHOOK_GARDEN }}
+
+permissions:
+  contents: write
+
+jobs:
+  synthesize:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Synthesize message
+        id: synth
+        run: |
+          python -c "
+          import json
+          from synthesis.synthesizer import synthesize
+          
+          result = synthesize(
+              '''${{ github.event.inputs.message }}''',
+              '''${{ github.event.inputs.channel }}'''
+          )
+          print('::set-output name=result::' + json.dumps(result))
+          print(json.dumps(result, indent=2))
+          "
+      
+      - name: Plant dream seeds
+        if: github.event.inputs.auto_plant == 'true'
+        run: |
+          python -c "
+          import json
+          import base64
+          import requests
+          import os
+          from datetime import datetime
+          
+          result = json.loads('''${{ steps.synth.outputs.result }}''')
+          
+          for seed in result.get('dream_seeds', []):
+              if seed.get('energy', 0) < 0.5:
+                  continue
+              
+              title = seed['title']
+              filename = title.lower().replace(' ', '-').replace('\"', '').replace(\"'\", '')
+              filename = f'dreams/{filename}.md'
+              
+              content = f'''# {title}
+
+          ## Essence
+          {seed['essence']}
+
+          ## Tags
+          {', '.join(seed.get('tags', []))}
+
+          ## Metadata
+          - Source: auto-synthesis
+          - Energy: {seed.get('energy', 0.5)}
+          - Planted: {datetime.utcnow().isoformat()}Z
+          '''
+              
+              # Create via GitHub API
+              url = f'https://api.github.com/repos/Diomandeee/dream-weaver-engine/contents/{filename}'
+              headers = {
+                  'Authorization': f'Bearer {os.environ[\"GITHUB_TOKEN\"]}',
+                  'Accept': 'application/vnd.github.v3+json',
+              }
+              data = {
+                  'message': f'🌰 Auto-seed: {title}',
+                  'content': base64.b64encode(content.encode()).decode(),
+                  'branch': 'main',
+              }
+              
+              response = requests.put(url, headers=headers, json=data)
+              if response.status_code in [200, 201]:
+                  print(f'Planted: {title}')
+              else:
+                  print(f'Failed: {title} - {response.status_code}')
+          "
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Output result
+        run: |
+          echo "Synthesis complete"
+          echo '${{ steps.synth.outputs.result }}' | jq .
