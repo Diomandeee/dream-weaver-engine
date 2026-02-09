@@ -28,6 +28,9 @@ env:
   DISCORD_WEBHOOK_GARDEN: ${{ secrets.DISCORD_WEBHOOK_GARDEN }}
   DISCORD_WEBHOOK_JOURNAL: ${{ secrets.DISCORD_WEBHOOK_JOURNAL }}
 
+permissions:
+  contents: write
+
 jobs:
   evolve:
     runs-on: ubuntu-latest
