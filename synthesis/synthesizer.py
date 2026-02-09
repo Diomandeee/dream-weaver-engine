@@ -1,22 +1,30 @@
 """Prompt Synthesizer via Kimi-K2-Thinking.
 
 Preprocesses messages before they reach Claude:
-- Enriches context
+- Enriches context via unified retrieval (local + Graph Kernel + RAG++)
 - Extracts dream seeds
 - Detects skill chains
 - Classifies intent
+- Learns facts, preferences, patterns
 
-Now with persistent memory!
+v2: Integrated with Comp-Core services (Graph Kernel, RAG++)
 """
 
 import os
 import json
+import asyncio
 from datetime import datetime
 from together import Together
 
 MODEL = "moonshotai/Kimi-K2-Thinking"
 
 SYSTEM_PROMPT = """You are a Prompt Synthesizer - a preprocessing layer that enriches user messages before they reach the main AI assistant.
+
+You have access to:
+- Recent conversation history
+- Known facts and preferences about the user
+- Knowledge graph relationships
+- Retrieved relevant context (when available)
 
 Your job:
 1. ENRICH - Add implicit context, expand abbreviated thoughts, fill gaps
@@ -25,6 +33,7 @@ Your job:
 4. CLASSIFY - Categorize as: idea, task, question, exploration, directive
 5. ROUTE - Suggest where this should go: direct response, dream garden, pulse session, skill chain
 6. LEARN - Extract facts, preferences, and patterns to remember
+7. CONNECT - Identify relationships to existing knowledge
 
 Output JSON:
 {
@@ -40,34 +49,39 @@ Output JSON:
     }
   ],
   "skill_chain": ["skill1", "skill2"] or null,
-  "project_refs": ["bwb", "milkmen", etc] or [],
+  "project_refs": ["bwb", "milkmen", "comp-core", etc] or [],
   "route": "direct|garden|pulse|chain",
   "route_reason": "Why this routing",
   "learnings": {
     "facts": [{"key": "fact_name", "value": "fact_value"}],
     "preferences": [{"key": "pref_name", "value": "pref_value"}],
     "patterns": [{"key": "pattern_name", "value": "pattern_description"}]
-  }
+  },
+  "knowledge_connections": [
+    {"subject": "entity1", "predicate": "relation", "object": "entity2"}
+  ]
 }
 
 Be generous with dream seed extraction - capture any fuzzy idea that could grow.
 Only suggest skill chains when truly applicable (creative work, research, evolution).
-Extract learnings whenever the user reveals preferences, facts about themselves, or patterns in their behavior.
-"""
+Extract learnings whenever the user reveals preferences, facts about themselves, or patterns.
+Identify knowledge connections when entities relate to each other."""
 
 
 class KimiSynthesizer:
-    """Prompt synthesizer using Kimi-K2-Thinking with persistent memory."""
+    """Prompt synthesizer using Kimi-K2-Thinking with unified retrieval."""
     
-    def __init__(self, api_key: str = None, use_memory: bool = True):
+    def __init__(self, api_key: str = None, use_memory: bool = True, use_services: bool = True):
         self.api_key = api_key or os.environ.get("TOGETHER_API_KEY")
         self.client = Together(api_key=self.api_key)
-        self.context_buffer = []  # Rolling context (in-memory fallback)
+        self.context_buffer = []  # In-memory fallback
         self.max_context = 50
         
-        # Persistent memory
+        # Memory and services
         self.use_memory = use_memory
+        self.use_services = use_services
         self._memory = None
+        self._retriever = None
     
     @property
     def memory(self):
@@ -82,6 +96,20 @@ class KimiSynthesizer:
                 print(f"Memory store unavailable: {e}")
                 self.use_memory = False
         return self._memory
+    
+    @property
+    def retriever(self):
+        """Lazy-load unified retriever."""
+        if self._retriever is None and self.use_services:
+            try:
+                import sys
+                sys.path.insert(0, str(__file__).rsplit('/', 2)[0])
+                from memory.unified_retriever import get_unified_retriever
+                self._retriever = get_unified_retriever()
+            except Exception as e:
+                print(f"Unified retriever unavailable: {e}")
+                self.use_services = False
+        return self._retriever
     
     def add_context(self, role: str, content: str, channel: str = None):
         """Add to context - both in-memory and persistent."""
@@ -105,7 +133,7 @@ class KimiSynthesizer:
         """Get recent context - from memory if available."""
         if self.memory:
             context = self.memory.build_context_summary()
-            if context and context != "":
+            if context and context.strip():
                 return context
         
         # Fallback to in-memory
@@ -117,6 +145,23 @@ class KimiSynthesizer:
             f"[{m['role']}] {m['content'][:200]}..."
             for m in recent
         ])
+    
+    async def get_rich_context(self, message: str, anchor_turn_id: str = None) -> str:
+        """Get rich context using unified retriever."""
+        if not self.retriever:
+            return self.get_context_summary()
+        
+        try:
+            context = await self.retriever.build_context(
+                query=message,
+                anchor_turn_id=anchor_turn_id,
+                include_slice=True,
+                include_rag=True
+            )
+            return context.to_prompt_context(max_chars=4000)
+        except Exception as e:
+            print(f"Rich context failed: {e}")
+            return self.get_context_summary()
     
     def save_synthesis_result(self, message_id: int, result: dict):
         """Save synthesis result to memory."""
@@ -132,16 +177,51 @@ class KimiSynthesizer:
             for pattern in learnings.get("patterns", []):
                 self.memory.remember(pattern["key"], pattern["value"], "pattern", 0.6)
     
-    def synthesize(self, message: str, channel: str = None) -> dict:
-        """Synthesize a message, returning enriched output."""
+    async def sync_to_graph_kernel(self, result: dict):
+        """Sync learnings and knowledge connections to Graph Kernel."""
+        if not self.retriever:
+            return
+        
+        try:
+            # Sync learnings
+            learnings = result.get("learnings", {})
+            if learnings:
+                await self.retriever.sync_learnings_to_graph_kernel(learnings)
+            
+            # Sync knowledge connections
+            connections = result.get("knowledge_connections", [])
+            if connections:
+                from memory.graph_kernel_client import get_graph_kernel_client, KnowledgeTriple
+                client = get_graph_kernel_client()
+                triples = [
+                    KnowledgeTriple(
+                        subject=c["subject"],
+                        predicate=c["predicate"],
+                        object=c["object"],
+                        confidence=0.7,
+                        source="kimi-synthesis"
+                    )
+                    for c in connections
+                ]
+                await client.add_knowledge_batch(triples)
+        except Exception as e:
+            print(f"Graph Kernel sync failed: {e}")
+    
+    async def synthesize_async(
+        self,
+        message: str,
+        channel: str = None,
+        anchor_turn_id: str = None
+    ) -> dict:
+        """Async synthesis with full service integration."""
         
         # Save incoming message
         message_id = self.add_context("user", message, channel)
         
-        # Get context
-        context = self.get_context_summary()
+        # Get rich context
+        context = await self.get_rich_context(message, anchor_turn_id)
         
-        prompt = f"""# Memory Context
+        prompt = f"""# Context (from memory, knowledge graph, and retrieval)
 {context}
 
 # Current Channel
@@ -151,7 +231,7 @@ class KimiSynthesizer:
 {message}
 
 # Task
-Synthesize this message. Extract any learnings (facts, preferences, patterns).
+Synthesize this message. Extract learnings. Identify knowledge connections.
 Output JSON only."""
 
         response = self.client.chat.completions.create(
@@ -183,19 +263,102 @@ Output JSON only."""
                 "project_refs": [],
                 "route": "direct",
                 "route_reason": "Parse failed, defaulting to direct",
-                "learnings": {}
+                "learnings": {},
+                "knowledge_connections": []
             }
         
         # Save synthesis result
         self.save_synthesis_result(message_id, result)
         
+        # Sync to Graph Kernel (background)
+        asyncio.create_task(self.sync_to_graph_kernel(result))
+        
         return result
     
+    def synthesize(self, message: str, channel: str = None) -> dict:
+        """Sync wrapper for synthesis."""
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # Create new loop for sync context
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(
+                        asyncio.run,
+                        self.synthesize_async(message, channel)
+                    )
+                    return future.result(timeout=60)
+            else:
+                return loop.run_until_complete(
+                    self.synthesize_async(message, channel)
+                )
+        except Exception as e:
+            print(f"Async synthesis failed, falling back: {e}")
+            return self._synthesize_simple(message, channel)
+    
+    def _synthesize_simple(self, message: str, channel: str = None) -> dict:
+        """Simple synchronous synthesis without service integration."""
+        context = self.get_context_summary()
+        
+        prompt = f"""# Context
+{context}
+
+# Channel
+{channel or "unknown"}
+
+# Message
+{message}
+
+Synthesize. Output JSON only."""
+
+        response = self.client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=2048,
+            temperature=0.7,
+        )
+        
+        result_text = response.choices[0].message.content
+        
+        try:
+            if "```json" in result_text:
+                result_text = result_text.split("```json")[1].split("```")[0]
+            elif "```" in result_text:
+                result_text = result_text.split("```")[1].split("```")[0]
+            return json.loads(result_text.strip())
+        except json.JSONDecodeError:
+            return {
+                "enriched_prompt": message,
+                "intent": "unknown",
+                "confidence": 0.5,
+                "dream_seeds": [],
+                "skill_chain": None,
+                "project_refs": [],
+                "route": "direct",
+                "route_reason": "Parse failed"
+            }
+    
     def get_stats(self) -> dict:
-        """Get memory statistics."""
+        """Get memory and service statistics."""
+        stats = {"status": "ok"}
+        
         if self.memory:
-            return self.memory.get_stats()
-        return {"status": "memory_disabled", "buffer_size": len(self.context_buffer)}
+            stats["memory"] = self.memory.get_stats()
+        else:
+            stats["memory"] = {"status": "disabled"}
+        
+        if self.retriever:
+            stats["services"] = {
+                "graph_kernel": self.retriever._gk_available,
+                "rag_plus_plus": self.retriever._rag_available
+            }
+        else:
+            stats["services"] = {"status": "disabled"}
+        
+        return stats
 
 
 # Singleton for persistent context
@@ -213,8 +376,13 @@ def synthesize(message: str, channel: str = None) -> dict:
     return get_synthesizer().synthesize(message, channel)
 
 
+async def synthesize_async(message: str, channel: str = None, anchor: str = None) -> dict:
+    """Async entry point for synthesis."""
+    return await get_synthesizer().synthesize_async(message, channel, anchor)
+
+
 def get_memory_stats() -> dict:
-    """Get memory statistics."""
+    """Get memory and service statistics."""
     return get_synthesizer().get_stats()
 
 
@@ -222,6 +390,15 @@ if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "stats":
         print(json.dumps(get_memory_stats(), indent=2))
+    elif len(sys.argv) > 1 and sys.argv[1] == "check":
+        async def check():
+            synth = get_synthesizer()
+            if synth.retriever:
+                services = await synth.retriever.check_services()
+                print(json.dumps(services, indent=2))
+            else:
+                print("Retriever not available")
+        asyncio.run(check())
     else:
         message = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "Test message"
         result = synthesize(message)
