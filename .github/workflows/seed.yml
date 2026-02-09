@@ -1,0 +1,73 @@
+name: Plant New Seed
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Dream title'
+        required: true
+      essence:
+        description: 'Core idea/essence'
+        required: true
+      context:
+        description: 'Additional context (optional)'
+        required: false
+        default: ''
+      tags:
+        description: 'Tags (comma-separated)'
+        required: false
+        default: ''
+
+env:
+  DISCORD_WEBHOOK_GARDEN: ${{ secrets.DISCORD_WEBHOOK_GARDEN }}
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Create dream file
+        run: |
+          # Sanitize title for filename
+          FILENAME=$(echo "${{ github.event.inputs.title }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//')
+          
+          cat > "dreams/${FILENAME}.md" << 'EOF'
+          # ${{ github.event.inputs.title }}
+          
+          ## Essence
+          ${{ github.event.inputs.essence }}
+          
+          ## Context
+          ${{ github.event.inputs.context }}
+          
+          ## Tags
+          ${{ github.event.inputs.tags }}
+          EOF
+          
+          echo "Created dreams/${FILENAME}.md"
+      
+      - name: Commit new seed
+        run: |
+          git config user.name "Dream Weaver Bot"
+          git config user.email "dreamweaver@bot.local"
+          
+          git add dreams/
+          git commit -m "🌰 New seed: ${{ github.event.inputs.title }}"
+          git push
+      
+      - name: Announce to Discord
+        if: env.DISCORD_WEBHOOK_GARDEN != ''
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "🌰 New Seed: ${{ github.event.inputs.title }}",
+                "description": "${{ github.event.inputs.essence }}",
+                "color": 9127187,
+                "footer": {"text": "Planted via GitHub Actions"}
+              }]
+            }' \
+            "$DISCORD_WEBHOOK_GARDEN"

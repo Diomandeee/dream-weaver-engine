@@ -1,0 +1,59 @@
+name: Garden Status
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily status at 9 AM UTC
+    - cron: '0 9 * * *'
+
+env:
+  DISCORD_WEBHOOK_JOURNAL: ${{ secrets.DISCORD_WEBHOOK_JOURNAL }}
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Generate status report
+        id: status
+        run: |
+          # Count dreams by stage
+          TOTAL=$(ls -1 dreams/*.md 2>/dev/null | wc -l || echo 0)
+          
+          # Read state file
+          if [ -f state/dreams.json ]; then
+            BLOOMS=$(jq '.total_blooms // 0' state/dreams.json)
+            EVOLUTIONS=$(jq '.total_evolutions // 0' state/dreams.json)
+            LAST=$(jq -r '.last_evolution // "never"' state/dreams.json)
+          else
+            BLOOMS=0
+            EVOLUTIONS=0
+            LAST="never"
+          fi
+          
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+          echo "blooms=$BLOOMS" >> $GITHUB_OUTPUT
+          echo "evolutions=$EVOLUTIONS" >> $GITHUB_OUTPUT
+          echo "last=$LAST" >> $GITHUB_OUTPUT
+      
+      - name: Post status to Discord
+        if: env.DISCORD_WEBHOOK_JOURNAL != ''
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "🌿 Garden Status Report",
+                "color": 5025616,
+                "fields": [
+                  {"name": "Total Dreams", "value": "${{ steps.status.outputs.total }}", "inline": true},
+                  {"name": "Total Blooms", "value": "${{ steps.status.outputs.blooms }}", "inline": true},
+                  {"name": "Total Evolutions", "value": "${{ steps.status.outputs.evolutions }}", "inline": true},
+                  {"name": "Last Evolution", "value": "${{ steps.status.outputs.last }}", "inline": false}
+                ],
+                "footer": {"text": "Dream Weaver Engine"}
+              }]
+            }' \
+            "$DISCORD_WEBHOOK_JOURNAL"

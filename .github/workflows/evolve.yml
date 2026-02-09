@@ -1,0 +1,75 @@
+name: Dream Evolution Cycle
+
+on:
+  # Run every 30 minutes
+  schedule:
+    - cron: '*/30 * * * *'
+  
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      max_dreams:
+        description: 'Maximum dreams to evolve'
+        required: false
+        default: '5'
+      dry_run:
+        description: 'Dry run (no state changes)'
+        required: false
+        default: 'false'
+  
+  # Trigger on new dream files
+  push:
+    paths:
+      - 'dreams/**'
+
+env:
+  TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+  DISCORD_WEBHOOK_BLOOMS: ${{ secrets.DISCORD_WEBHOOK_BLOOMS }}
+  DISCORD_WEBHOOK_GARDEN: ${{ secrets.DISCORD_WEBHOOK_GARDEN }}
+  DISCORD_WEBHOOK_JOURNAL: ${{ secrets.DISCORD_WEBHOOK_JOURNAL }}
+
+jobs:
+  evolve:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Run evolution cycle
+        id: evolve
+        run: |
+          MAX_DREAMS="${{ github.event.inputs.max_dreams || '5' }}"
+          DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
+          
+          if [ "$DRY_RUN" = "true" ]; then
+            python -m dream_engine.evolve --dry-run
+          else
+            python -m dream_engine.evolve
+          fi
+      
+      - name: Commit state changes
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          git config user.name "Dream Weaver Bot"
+          git config user.email "dreamweaver@bot.local"
+          
+          git add state/ dreams/
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "🌱 Evolution cycle $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
