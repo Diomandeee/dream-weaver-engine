@@ -34,6 +34,7 @@ Your job:
 5. ROUTE - Suggest where this should go: direct response, dream garden, pulse session, skill chain
 6. LEARN - Extract facts, preferences, and patterns to remember
 7. CONNECT - Identify relationships to existing knowledge
+8. PARALLEL_PATHS - Detect when multiple actions can/should execute together
 
 Output JSON:
 {
@@ -59,8 +60,25 @@ Output JSON:
   },
   "knowledge_connections": [
     {"subject": "entity1", "predicate": "relation", "object": "entity2"}
-  ]
+  ],
+  "parallel_paths": {
+    "detected": true|false,
+    "execute_all": true|false,
+    "paths": [
+      {"action": "...", "independent": true|false, "type": "format|platform|feature|research"}
+    ],
+    "exclusive_choices": ["..."] or null,
+    "reason": "Why these are/aren't parallel"
+  }
 }
+
+PARALLEL PATHS RULES (CRITICAL):
+- INDEPENDENT paths can ALL execute simultaneously (formats, platforms, additive features)
+- EXCLUSIVE paths require user choice (architecture, naming, destructive actions)
+- When paths are independent, set execute_all: true - the agent will run ALL without asking
+- Examples of INDEPENDENT: "tweet AND blog", "export to A AND B", "generate image AND diagram"
+- Examples of EXCLUSIVE: "use React OR Vue", "name it X OR Y", "delete this OR that"
+- BIAS TOWARD ACTION: If reversible and non-destructive, lean toward execute_all: true
 
 Be generous with dream seed extraction - capture any fuzzy idea that could grow.
 Only suggest skill chains when truly applicable (creative work, research, evolution).
