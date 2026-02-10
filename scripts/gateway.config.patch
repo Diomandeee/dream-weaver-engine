@@ -1,0 +1,47 @@
+# Clawdbot Config Patch — Kimi K2 Synthesis Integration
+# Apply these changes to ~/.clawdbot/clawdbot.json after gateway restart
+#
+# Generated: 2026-02-10
+# =====================================================================
+
+## 1. Plugin config — enable synthesis (REQUIRED)
+## Path: plugins.entries.kimi-memory-sync.config
+## Change: enableSynthesis false → true
+
+BEFORE:
+  "kimi-memory-sync": {
+    "enabled": true,
+    "config": {
+      "dbPath": "/Users/mohameddiomande/projects/dream-weaver-engine/memory/kimi_memory.db",
+      "enableSynthesis": false
+    }
+  }
+
+AFTER:
+  "kimi-memory-sync": {
+    "enabled": true,
+    "config": {
+      "dbPath": "/Users/mohameddiomande/projects/dream-weaver-engine/memory/kimi_memory.db",
+      "enableSynthesis": true,
+      "gardenChannelName": "garden",
+      "graphKernelUrl": "http://127.0.0.1:8001",
+      "dreamSeedEnergyThreshold": 0.5
+    }
+  }
+
+## 2. Hook registration — synthesis-preprocessor (OPTIONAL — enriches agent context)
+## Path: hooks.internal.entries
+## Add entry for synthesis-preprocessor
+
+ADD TO hooks.internal.entries:
+  "synthesis-preprocessor": {
+    "enabled": true
+  }
+
+## =====================================================================
+## NOTES:
+## - The plugin handles synthesis + routing + Graph Kernel sync independently
+## - The hook adds synthesis metadata to agent context (complementary)
+## - Both can be enabled independently
+## - Env vars TOGETHER_API_KEY and ENABLE_SYNTHESIS must be in process env
+## =====================================================================

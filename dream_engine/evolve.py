@@ -122,6 +122,18 @@ def run_evolution_cycle(
     file_dreams = load_dream_files()
     sync_dreams_to_state(state, file_dreams)
     
+    # HTDS integration: inject high-density sessions as seed candidates
+    try:
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent.parent / "synthesis"))
+        from htds_integration import get_dream_seeds_from_htds
+        htds_seeds = get_dream_seeds_from_htds(limit=5)
+        if htds_seeds and not htds_seeds[0].get("error"):
+            print(f"  📊 HTDS: {len(htds_seeds)} high-density sessions available for seeding")
+            state.htds_seed_candidates = htds_seeds  # Store for cross-pollination context
+    except Exception as e:
+        print(f"  HTDS unavailable: {e}")
+    
     # Get dreams ready for evolution
     dreams_to_evolve = state.get_dreams_for_evolution(max_dreams)
     

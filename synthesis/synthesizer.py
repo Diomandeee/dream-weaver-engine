@@ -100,6 +100,18 @@ class KimiSynthesizer:
         self.use_services = use_services
         self._memory = None
         self._retriever = None
+        
+        # HTDS integration
+        self._htds_context = None
+        try:
+            from synthesis.htds_integration import get_domain_context_for_synthesis
+            self._htds_context = get_domain_context_for_synthesis
+        except Exception:
+            try:
+                from htds_integration import get_domain_context_for_synthesis
+                self._htds_context = get_domain_context_for_synthesis
+            except Exception:
+                pass
     
     @property
     def memory(self):
@@ -239,8 +251,19 @@ class KimiSynthesizer:
         # Get rich context
         context = await self.get_rich_context(message, anchor_turn_id)
         
+        # HTDS topology context
+        htds_context = ""
+        if self._htds_context:
+            try:
+                htds_context = self._htds_context(message)
+            except Exception:
+                htds_context = "[HTDS] unavailable"
+        
         prompt = f"""# Context (from memory, knowledge graph, and retrieval)
 {context}
+
+# Topology Context (from HTDS — density-pruned knowledge hierarchy)
+{htds_context}
 
 # Current Channel
 {channel or "unknown"}
@@ -250,6 +273,7 @@ class KimiSynthesizer:
 
 # Task
 Synthesize this message. Extract learnings. Identify knowledge connections.
+Use the topology context to weight domain relevance.
 Output JSON only."""
 
         response = self.client.chat.completions.create(
