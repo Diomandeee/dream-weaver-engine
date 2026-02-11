@@ -1,0 +1,135 @@
+name: Dream Research Pipeline
+
+on:
+  # Trigger after evolution cycle completes
+  workflow_run:
+    workflows: ["Dream Evolution Cycle"]
+    types:
+      - completed
+
+  # Manual trigger with options
+  workflow_dispatch:
+    inputs:
+      dream_id:
+        description: 'Research specific dream ID (leave empty for auto)'
+        required: false
+        default: ''
+      depth:
+        description: 'Research depth'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - scout
+          - deep
+          - heavy
+      all_blooms:
+        description: 'Research all bloomed dreams'
+        required: false
+        default: 'false'
+        type: boolean
+      trigger:
+        description: 'Trigger type'
+        required: false
+        default: 'evolution'
+        type: choice
+        options:
+          - evolution
+          - bloom
+          - manual
+          - seed
+          - synthesis
+      dry_run:
+        description: 'Dry run (preview only)'
+        required: false
+        default: 'false'
+        type: boolean
+
+  # Trigger on new dream files (new seeds planted = research opportunity)
+  push:
+    paths:
+      - 'dreams/**'
+
+env:
+  TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+  BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
+  DISCORD_WEBHOOK_RESEARCH: ${{ secrets.DISCORD_WEBHOOK_RESEARCH }}
+  DISCORD_WEBHOOK_GARDEN: ${{ secrets.DISCORD_WEBHOOK_GARDEN }}
+
+permissions:
+  contents: write
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    # Don't run research if evolution failed
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Get latest state (evolution may have just pushed)
+          ref: main
+
+      - name: Pull latest changes
+        run: git pull origin main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run research pipeline
+        id: research
+        run: |
+          DREAM_ID="${{ github.event.inputs.dream_id || '' }}"
+          DEPTH="${{ github.event.inputs.depth || 'auto' }}"
+          ALL_BLOOMS="${{ github.event.inputs.all_blooms || 'false' }}"
+          TRIGGER="${{ github.event.inputs.trigger || 'evolution' }}"
+          DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
+
+          ARGS=""
+
+          if [ -n "$DREAM_ID" ]; then
+            ARGS="$ARGS --dream-id $DREAM_ID"
+          fi
+
+          if [ "$DEPTH" != "auto" ]; then
+            ARGS="$ARGS --depth $DEPTH"
+          fi
+
+          if [ "$ALL_BLOOMS" = "true" ]; then
+            ARGS="$ARGS --all-blooms"
+          fi
+
+          ARGS="$ARGS --trigger $TRIGGER"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+
+          echo "Running: python -m research.run_research $ARGS"
+          python -m research.run_research $ARGS
+
+      - name: Commit research results
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          git config user.name "Dream Research Bot"
+          git config user.email "dreamresearch@bot.local"
+
+          git add research/reports/ state/ dreams/
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            REPORT_COUNT=$(find research/reports -name "*.md" -newer state/research.json 2>/dev/null | wc -l || echo "0")
+            git commit -m "🔬 Research cycle: ${REPORT_COUNT} reports generated $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi

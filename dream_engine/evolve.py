@@ -220,6 +220,87 @@ def run_evolution_cycle(
             journal_entry = kimi.generate_journal_entry(garden_summary, evolutions)
             discord.post_journal_entry(journal_entry)
     
+    # === RESEARCH PIPELINE INTEGRATION ===
+    # Trigger research for dreams that crossed thresholds
+    if not dry_run and evolutions:
+        try:
+            from research.engine import ResearchEngine, ResearchTrigger
+            from research.discord_reporter import ResearchDiscordReporter
+            
+            research_engine = ResearchEngine()
+            discord_research = ResearchDiscordReporter()
+            research_results = []
+            
+            for evo in evolutions:
+                dream = state.dreams.get(evo["dream_id"])
+                if not dream:
+                    continue
+                
+                # Determine trigger type
+                trigger = ResearchTrigger.BLOOM if evo.get("stage_change") and dream.stage == DreamStage.BLOOM else ResearchTrigger.EVOLUTION
+                if evo.get("stage_change"):
+                    trigger = ResearchTrigger.STAGE_CHANGE
+                
+                should, depth = research_engine.should_research(
+                    dream_id=dream.id,
+                    dream_strength=dream.strength,
+                    trigger=trigger,
+                    stage=dream.stage.value,
+                )
+                
+                if should:
+                    connections_ctx = [
+                        {"title": d.title, "essence": d.essence, "tags": d.tags}
+                        for d in state.get_potential_connections(dream, max_count=3)
+                    ]
+                    
+                    report = research_engine.research_dream(
+                        dream_id=dream.id,
+                        dream_title=dream.title,
+                        dream_essence=dream.essence,
+                        dream_context=dream.context,
+                        dream_tags=dream.tags,
+                        dream_strength=dream.strength,
+                        connections=connections_ctx,
+                        depth=depth,
+                        trigger=trigger,
+                    )
+                    
+                    # Post to Discord
+                    discord_research.post_research_report(
+                        dream_title=dream.title,
+                        report=report,
+                        depth=depth.value,
+                        dream_id=dream.id,
+                    )
+                    
+                    # Plant seeds back
+                    new_seeds = report.get("new_seeds", [])
+                    if new_seeds:
+                        research_engine.plant_research_seeds(new_seeds, dream.id)
+                    
+                    # Apply research-recommended strength boost
+                    rec_delta = report.get("recommended_strength_delta", 0)
+                    if 0 < rec_delta <= 0.2:
+                        dream.strength = min(1.0, dream.strength + rec_delta)
+                        dream.update_stage()
+                    
+                    research_results.append({
+                        "dream_id": dream.id,
+                        "depth": depth.value,
+                        "seeds": len(new_seeds),
+                    })
+            
+            if research_results:
+                print(f"  🔬 Research: {len(research_results)} dreams researched, "
+                      f"{sum(r['seeds'] for r in research_results)} seeds planted")
+                # Save state again with research-modified strength
+                save_state(state)
+                
+        except Exception as e:
+            print(f"  [Research] Pipeline skipped: {e}")
+    # === END RESEARCH PIPELINE ===
+    
     print(f"✅ Evolution complete: {len(evolutions)} evolved, {len(blooms)} bloomed")
     
     return {
