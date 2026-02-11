@@ -124,6 +124,7 @@ jobs:
           git config user.name "Dream Research Bot"
           git config user.email "dreamresearch@bot.local"
 
+          mkdir -p research/reports
           git add research/reports/ state/ dreams/
 
           if git diff --staged --quiet; then
