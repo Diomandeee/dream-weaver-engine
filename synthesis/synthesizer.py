@@ -315,6 +315,40 @@ Output JSON only."""
         # Sync to Graph Kernel (background)
         asyncio.create_task(self.sync_to_graph_kernel(result))
         
+        # === SKILL ROUTER INTEGRATION ===
+        # Enhance skill_chain with intelligent routing
+        try:
+            import subprocess
+            router_path = os.path.expanduser("~/.clawdbot/tools/skill-router.py")
+            if os.path.exists(router_path):
+                # Use the router to resolve/enhance the chain
+                router_result = subprocess.run(
+                    ["python3", router_path, "chain", message],
+                    capture_output=True, text=True, timeout=5
+                )
+                if router_result.returncode == 0:
+                    router_data = json.loads(router_result.stdout)
+                    routed_chain = router_data.get("chain", [])
+                    
+                    # Merge: Kimi's chain + router's chain (deduplicated)
+                    kimi_chain = result.get("skill_chain") or []
+                    seen = set(kimi_chain)
+                    merged = list(kimi_chain)
+                    for skill in routed_chain:
+                        if skill not in seen:
+                            merged.append(skill)
+                            seen.add(skill)
+                    
+                    if merged:
+                        result["skill_chain"] = merged
+                        result["skill_chain_context"] = router_data.get("context", "")
+                        if result.get("route") == "direct" and len(merged) > 1:
+                            result["route"] = "chain"
+                            result["route_reason"] = f"Skill router detected chain: {' → '.join(merged)}"
+        except Exception as e:
+            pass  # Router is optional enhancement, never block synthesis
+        # === END SKILL ROUTER ===
+        
         return result
     
     def synthesize(self, message: str, channel: str = None) -> dict:
