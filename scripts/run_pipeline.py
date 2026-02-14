@@ -4,91 +4,78 @@ Full Knowledge Pipeline
 =======================
 1. Sync Clawdbot sessions → kimi_memory.db messages
 2. Extract knowledge triples → kimi_memory.db knowledge_graph
-3. Sync knowledge_graph → Graph Kernel (when /api/knowledge available)
+3. Incremental sync → Graph Kernel / Supabase (only new triples)
 
 Run: python3 ~/projects/dream-weaver-engine/scripts/run_pipeline.py
 """
 
+import subprocess
 import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+VENV_PYTHON = str(PROJECT_ROOT / ".venv" / "bin" / "python3")
+SCRIPTS = PROJECT_ROOT / "scripts"
+
+
+def run_step(name: str, script: str, timeout: int = 60):
+    """Run a pipeline step as a subprocess for isolation."""
+    print(f"\n[{name}]")
+    try:
+        result = subprocess.run(
+            [VENV_PYTHON, str(SCRIPTS / script)],
+            cwd=str(PROJECT_ROOT),
+            timeout=timeout,
+            capture_output=True,
+            text=True
+        )
+        if result.stdout:
+            print(result.stdout.rstrip())
+        if result.stderr:
+            print(result.stderr.rstrip(), file=sys.stderr)
+        if result.returncode != 0:
+            print(f"  ⚠ Step exited with code {result.returncode}")
+        return result.returncode == 0
+    except subprocess.TimeoutExpired:
+        print(f"  ⚠ Step timed out after {timeout}s")
+        return False
+    except Exception as e:
+        print(f"  ⚠ Step failed: {e}")
+        return False
+
 
 def main():
     print("=" * 60)
     print("  Kimi Knowledge Pipeline")
     print("=" * 60)
-    
-    # Step 1: Sync sessions
-    print("\n[1/3] Syncing Clawdbot sessions → messages...")
-    from sync_sessions import main as sync_main
-    sync_main()
-    
-    # Step 2: Extract knowledge locally
-    print("\n[2/3] Extracting knowledge triples...")
-    from extract_knowledge_local import main as extract_main
-    extract_main()
-    
-    # Step 3: Try syncing to Graph Kernel
-    print("\n[3/3] Syncing to Graph Kernel...")
-    import sqlite3
-    import asyncio
-    
-    MEMORY_DB = PROJECT_ROOT / "memory" / "kimi_memory.db"
-    conn = sqlite3.connect(MEMORY_DB)
-    
-    triples = conn.execute("""
-        SELECT subject, predicate, object, confidence 
-        FROM knowledge_graph
-    """).fetchall()
-    conn.close()
-    
-    if not triples:
-        print("  No triples to sync")
-        return
-    
-    async def try_graph_kernel_sync():
-        try:
-            from memory.graph_kernel_client import get_graph_kernel_client, KnowledgeTriple
-            client = get_graph_kernel_client()
-            
-            healthy = await client.health_check()
-            if not healthy:
-                print("  Graph Kernel not available")
-                return 0
-            
-            print(f"  Graph Kernel is online ✓")
-            
-            kt_list = [
-                KnowledgeTriple(
-                    subject=t[0], predicate=t[1], object=t[2], 
-                    confidence=t[3], source="kimi-pipeline"
-                )
-                for t in triples
-            ]
-            
-            synced = await client.add_knowledge_batch(kt_list)
-            print(f"  Synced {synced} triples to Graph Kernel")
-            return synced
-        except Exception as e:
-            print(f"  Graph Kernel sync failed: {e}")
-            print(f"  (Graph Kernel may not have /api/knowledge endpoints yet)")
-            return 0
-    
-    asyncio.run(try_graph_kernel_sync())
-    
-    print("\n" + "=" * 60)
-    
+
+    # Step 1: Sync sessions → messages
+    run_step("1/3 Sync sessions → messages", "sync_sessions.py", timeout=60)
+
+    # Step 2: Extract knowledge triples
+    run_step("2/3 Extract knowledge triples", "extract_knowledge_local.py", timeout=120)
+
+    # Step 3: Incremental sync to Graph Kernel
+    run_step("3/3 Sync to Graph Kernel (incremental)", "sync_to_graph_kernel.py", timeout=120)
+
     # Final stats
+    import sqlite3
+    MEMORY_DB = PROJECT_ROOT / "memory" / "kimi_memory.db"
     conn = sqlite3.connect(MEMORY_DB)
     msg_count = conn.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
     kg_count = conn.execute("SELECT COUNT(*) FROM knowledge_graph").fetchone()[0]
     conn.close()
-    
-    print(f"  Messages:         {msg_count}")
+
+    import json
+    state_file = PROJECT_ROOT / "memory" / "gk_sync_state.json"
+    gk_synced = 0
+    if state_file.exists():
+        gk_synced = json.loads(state_file.read_text()).get("last_synced_rowid", 0)
+
+    print("\n" + "=" * 60)
+    print(f"  Messages:          {msg_count}")
     print(f"  Knowledge triples: {kg_count}")
+    print(f"  GK synced up to:   rowid {gk_synced}")
     print("=" * 60)
 
 

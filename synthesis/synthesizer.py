@@ -11,6 +11,7 @@ v2: Integrated with Comp-Core services (Graph Kernel, RAG++)
 """
 
 import os
+import sys
 import json
 import asyncio
 from datetime import datetime
@@ -123,7 +124,7 @@ class KimiSynthesizer:
                 from memory.store import get_store
                 self._memory = get_store()
             except Exception as e:
-                print(f"Memory store unavailable: {e}")
+                print(f"Memory store unavailable: {e}", file=sys.stderr)
                 self.use_memory = False
         return self._memory
     
@@ -137,7 +138,7 @@ class KimiSynthesizer:
                 from memory.unified_retriever import get_unified_retriever
                 self._retriever = get_unified_retriever()
             except Exception as e:
-                print(f"Unified retriever unavailable: {e}")
+                print(f"Unified retriever unavailable: {e}", file=sys.stderr)
                 self.use_services = False
         return self._retriever
     
@@ -190,7 +191,7 @@ class KimiSynthesizer:
             )
             return context.to_prompt_context(max_chars=4000)
         except Exception as e:
-            print(f"Rich context failed: {e}")
+            print(f"Rich context failed: {e}", file=sys.stderr)
             return self.get_context_summary()
     
     def save_synthesis_result(self, message_id: int, result: dict):
@@ -235,7 +236,7 @@ class KimiSynthesizer:
                 ]
                 await client.add_knowledge_batch(triples)
         except Exception as e:
-            print(f"Graph Kernel sync failed: {e}")
+            print(f"Graph Kernel sync failed: {e}", file=sys.stderr)
     
     async def synthesize_async(
         self,
@@ -369,7 +370,7 @@ Output JSON only."""
                     self.synthesize_async(message, channel)
                 )
         except Exception as e:
-            print(f"Async synthesis failed, falling back: {e}")
+            print(f"Async synthesis failed, falling back: {e}", file=sys.stderr)
             return self._synthesize_simple(message, channel)
     
     def _synthesize_simple(self, message: str, channel: str = None) -> dict:

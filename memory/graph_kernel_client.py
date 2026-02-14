@@ -205,27 +205,32 @@ class GraphKernelClient:
         except Exception:
             return False
     
-    async def add_knowledge_batch(self, triples: List[KnowledgeTriple]) -> int:
-        """Add multiple knowledge triples. Returns count of successful adds."""
-        try:
-            response = await self.client.post(
-                f"{self.base_url}/api/knowledge/batch",
-                json=[
-                    {
-                        "subject": t.subject,
-                        "predicate": t.predicate,
-                        "object": t.object,
-                        "confidence": t.confidence,
-                        "source": t.source
-                    }
-                    for t in triples
-                ]
-            )
-            if response.status_code == 200:
-                return response.json().get("added", 0)
-        except Exception:
-            pass
-        return 0
+    async def add_knowledge_batch(self, triples: List[KnowledgeTriple], chunk_size: int = 50) -> int:
+        """Add multiple knowledge triples in chunks. Returns count of successful adds."""
+        total = 0
+        for i in range(0, len(triples), chunk_size):
+            chunk = triples[i:i + chunk_size]
+            try:
+                response = await self.client.post(
+                    f"{self.base_url}/api/knowledge/batch",
+                    json=[
+                        {
+                            "subject": t.subject,
+                            "predicate": t.predicate,
+                            "object": t.object,
+                            "confidence": t.confidence,
+                            "source": t.source
+                        }
+                        for t in chunk
+                    ],
+                    timeout=60.0
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    total += data.get("added", 0) + data.get("updated", 0)
+            except Exception as e:
+                print(f"  Chunk {i // chunk_size + 1} failed: {e}")
+        return total
     
     async def query_knowledge(
         self,
