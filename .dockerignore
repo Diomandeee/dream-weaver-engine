@@ -1,0 +1,28 @@
+# Runtime databases (mounted via volume, not baked into image)
+memory/*.db
+memory/*.db.bak-*
+memory/gk_sync_state.json
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# Environment (secrets)
+.env
+
+# Git
+.git/
+.github/
+
+# IDE
+.vscode/
+.idea/
+
+# PID files
+*.pid
+
+# Docs (not needed at runtime)
+docs/
+README.md
