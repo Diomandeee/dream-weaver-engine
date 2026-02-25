@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="refresh" content="300">
+<title>🌙 Dream Garden</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d1117; color: #c9d1d9;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    padding: 2rem;
+  }
+  h1 { text-align: center; font-size: 2rem; margin-bottom: 0.5rem; color: #e6edf3; }
+  .stats {
+    text-align: center; margin-bottom: 2rem; color: #8b949e; font-size: 0.95rem;
+  }
+  .stats span { margin: 0 1rem; }
+  .garden-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.2rem;
+    max-width: 1400px; margin: 0 auto;
+    position: relative;
+  }
+  .dream-card {
+    background: #161b22; border-radius: 8px; padding: 1rem;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .dream-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+  .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .icon { font-size: 1.5rem; }
+  .title { font-weight: 600; font-size: 1.05rem; flex: 1; color: #e6edf3; }
+  .stage { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; }
+  .essence { color: #8b949e; font-size: 0.85rem; margin-bottom: 0.6rem; line-height: 1.4; }
+  .strength-bar-container {
+    background: #21262d; border-radius: 4px; height: 20px;
+    position: relative; overflow: hidden; margin-bottom: 0.5rem;
+  }
+  .strength-bar { height: 100%; border-radius: 4px; transition: width 0.5s; }
+  .strength-label {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    font-size: 0.75rem; font-weight: 600; color: #e6edf3;
+  }
+  .meta { font-size: 0.75rem; color: #484f58; margin-bottom: 0.4rem; }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+  .tag {
+    background: #21262d; color: #8b949e; padding: 2px 8px;
+    border-radius: 12px; font-size: 0.7rem;
+  }
+  .connections { margin-top: 0.4rem; font-size: 0.8rem; color: #58a6ff; }
+  .generated { text-align: center; margin-top: 2rem; color: #484f58; font-size: 0.75rem; }
+  svg.conn { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+</style>
+</head>
+<body>
+  <h1>🌙 Dream Garden</h1>
+  <div class="stats">
+    <span>🌿 10 Dreams</span>
+    <span>🔄 249 Evolutions</span>
+    <span>🌺 90 Blooms</span>
+    <span>⏰ 2026-02-25 11:45 UTC</span>
+  </div>
+  <div class="garden-grid">
+    
+    <div class="dream-card" style="border-left: 4px solid #FF1493;" data-id="autonomous-dream-engine">
+      <div class="card-header">
+        <span class="icon">🌺</span>
+        <span class="title">Autonomous Dream Engine</span>
+        <span class="stage" style="color:#FF1493">BLOOM</span>
+      </div>
+      <div class="essence">An AI system that incubates ideas independently, evolving them through periodic reflection cycles powered by Kimi-K2-Thinking. Dreams grow from seeds </div>
+      <div class="strength-bar-container">
+        <div class="strength-bar" style="width:100%; background:#FF1493;"></div>
+        <span class="strength-label">1.00</span>
+      </div>
+      <div class="meta">
+        Evolutions: 117 &middot; Created: 2026-02-09
+      </div>
+      <div class="tags"><span class="tag">temporal-oracle-sovereignty</span> <span class="tag">pollination-drones</span> <span class="tag">symbiotic-consciousness-interface</span> <span class="tag">symbiotic-human-dependence</span> <span class="tag">compute-atp-conversion</span></div>
+      
+    </div>
+    <div class="dream-card" style="border-left: 4px solid #FF1493;" data-id="cross-project-pollination">
+      <div class="card-header">
+        <span class="icon">🌺</span>
+        <span class="title">Cross-Project Pollination</span>
+        <span class="stage" style="color:#FF1493">BLOOM</span>
+      </div>
+      <div class="essence">Ideas from one project (BWB, Milkmen, Serenity) naturally cross-pollinate with others, creating unexpected innovations. The coffee ordering voice inte</div>
+      <div class="strength-bar-container">
+        <div class="strength-bar" style="width:100%; background:#FF1493;"></div>
+        <span class="strength-label">1.00</span>
+      </div>
+      <div class="meta">
+        Evolutions: 117 &middot; Created: 2026-02-09
+      </div>
+      <div class="tags"><span class="tag">embodiment-oracle</span> <span class="tag">temporal-pollination-sanctuaries</span> <span class="tag">symbiotic-consciousness-interface</span> <span class="tag">physiological-oracle-modulation</span> <span class="tag">human-bee-interface</span></div>
+      
+    </div>
+    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="eternal-serenity-litrpg">
+      <div class="card-header">
+        <span class="icon">🌱</span>
+        <span class="title">Eternal Serenity — The LitRPG Convergence</span>
+        <span class="stage" style="color:#90EE90">GERMINATING</span>
+      </div>
+      <div class="essence">A game where MFP's wisdom trading cards and Serenity Soother's meditation worlds are the same universe. LitRPG mechanics (progression, combat, craftin</div>
+      <div class="strength-bar-container">
+        <div class="strength-bar" style="width:35%; background:#90EE90;"></div>
+        <span class="strength-label">0.35</span>
+      </div>
+      <div class="meta">
+        Evolutions: 2 &middot; Created: 2026-02-17
+      </div>
+      <div class="tags"><span class="tag">cbt-gamified</span> <span class="tag">narrative</span> <span class="tag">trading-cards</span> <span class="tag">biofeedback-integration</span> <span class="tag">serenity-soother</span></div>
+      
+    </div>
+    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="speak-flow-voice-os">
+      <div class="card-header">
+        <span class="icon">🌱</span>
+        <span class="title">Speak Flow — Personal Voice OS</span>
+        <span class="stage" style="color:#90EE90">GERMINATING</span>
+      </div>
+      <div class="essence">A Wispr Flow competitor built from scattered existing pieces. SpeakReader (Mac menu bar), SpeakBridge (STT engine), and N'Ko Keyboard (iOS keyboard ex</div>
+      <div class="strength-bar-container">
+        <div class="strength-bar" style="width:35%; background:#90EE90;"></div>
+        <span class="strength-label">0.35</span>
+      </div>
+      <div class="meta">
+        Evolutions: 2 &middot; Created: 2026-02-17
+      </div>
+      <div class="tags"><span class="tag">ai-dictation</span> <span class="tag">voice</span> <span class="tag">ios-keyboard</span> <span class="tag">product</span> <span class="tag">wispr</span></div>
+      
+    </div>
+    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="visionclaw-glasses-ai">
+      <div class="card-header">
+        <span class="icon">🌱</span>
+        <span class="title">VisionClaw — AI Eyes for the Real World</span>
+        <span class="stage" style="color:#90EE90">GERMINATING</span>
+      </div>
+      <div class="essence">An iOS app connecting iPhone/glasses cameras to Gemini Live for real-time visual AI. Four audio architecture variants tested (echo ducking, dual sessi</div>
+      <div class="strength-bar-container">
+        <div class="strength-bar" style="width:35%; background:#90EE90;"></div>
+        <span class="strength-label">0.35</span>
+      </div>
+      <div class="meta">
+        Evolutions: 2 &middot; Created: 2026-02-17
+      </div>
+      <div class="tags"><span class="tag">human-ai-coevolution-loop</span> <span class="tag">pheromone-mining-pipeline</span> <span class="tag">sensory-embodiment-protocol</span> <span class="tag">context-vector-fermentation</span> <span class="tag">conflict-superposition-protocol</span></div>
+      
+    </div>
+    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="cognitive-twin-reversal">
+      <div class="card-header">
+        <span class="icon">🌱</span>
+        <span class="title">Cognitive Twin — The Reversal</span>
+        <span class="stage" style="color:#90EE90">GERMINATING</span>
+      </div>
+      <div class="essence">Instead of injecting context into generic models, fine-tune models that already know our patterns. Twin Alpha (Qwen3-235B MoE) trained on 38K conversa</div>
+      <div class="strength-bar-container">
+        <div class="strength-bar" style="width:34%; background:#90EE90;"></div>
+        <span class="strength-label">0.34</span>
+      </div>
+      <div class="meta">
+        Evolutions: 2 &middot; Created: 2026-02-17
+      </div>
+      <div class="tags"><span class="tag">agent-swarm</span> <span class="tag">skill-entity-architecture</span> <span class="tag">feedback-loop</span> <span class="tag">predictive-filter</span> <span class="tag">together-ai</span></div>
+      
+    </div>
+    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="spore-idea-garden-app">
+      <div class="card-header">
+        <span class="icon">🌱</span>
+        <span class="title">Spore — The Idea Garden App</span>
+        <span class="stage" style="color:#90EE90">GERMINATING</span>
+      </div>
+      <div class="essence">A mobile app that makes idea incubation tangible. Plant seeds (ideas), tend them (add context, make connections), watch them grow through lifecycle st</div>
+      <div class="strength-bar-container">
+        <div class="strength-bar" style="width:27%; background:#90EE90;"></div>
+        <span class="strength-label">0.27</span>
+      </div>
+      <div class="meta">
+        Evolutions: 2 &middot; Created: 2026-02-17
+      </div>
+      <div class="tags"><span class="tag">idea-synthesis</span> <span class="tag">spore</span> <span class="tag">ios-app</span> <span class="tag">growth-algorithm</span> <span class="tag">gamification</span></div>
+      
+    </div>
+    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="nko-digital-preservation">
+      <div class="card-header">
+        <span class="icon">🌱</span>
+        <span class="title">N'Ko Digital Preservation</span>
+        <span class="stage" style="color:#90EE90">GERMINATING</span>
+      </div>
+      <div class="essence">Preserving and modernizing the Manding/Bambara writing system through technology. Cross-Script Bridge translates between N'Ko, Arabic, and Latin scrip</div>
+      <div class="strength-bar-container">
+        <div class="strength-bar" style="width:25%; background:#90EE90;"></div>
+        <span class="strength-label">0.25</span>
+      </div>
+      <div class="meta">
+        Evolutions: 2 &middot; Created: 2026-02-17
+      </div>
+      <div class="tags"><span class="tag">ios-keyboard</span> <span class="tag">ipa</span> <span class="tag">generative-music</span> <span class="tag">nko</span> <span class="tag">translation</span></div>
+      
+    </div>
+    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="autonomous-pulse-machine">
+      <div class="card-header">
+        <span class="icon">🌱</span>
+        <span class="title">The Autonomous Pulse Machine</span>
+        <span class="stage" style="color:#90EE90">GERMINATING</span>
+      </div>
+      <div class="essence">Discord channels as executable infrastructure. Each message is a task, each thread is an agent's workspace. Pulse plans auto-chain through waves — Wav</div>
+      <div class="strength-bar-container">
+        <div class="strength-bar" style="width:25%; background:#90EE90;"></div>
+        <span class="strength-label">0.25</span>
+      </div>
+      <div class="meta">
+        Evolutions: 2 &middot; Created: 2026-02-17
+      </div>
+      <div class="tags"><span class="tag">meta-build</span> <span class="tag">self-healing</span> <span class="tag">autonomous</span> <span class="tag">agents</span> <span class="tag">fitness-functions</span></div>
+      
+    </div>
+    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="skill-entity-architecture">
+      <div class="card-header">
+        <span class="icon">🌱</span>
+        <span class="title">Skill Entity Architecture (SEA)</span>
+        <span class="stage" style="color:#90EE90">GERMINATING</span>
+      </div>
+      <div class="essence">Inverting static skill files into living autonomous entities. 13 creative/philosophical skills become persistent daemons with memory, relevance scorin</div>
+      <div class="strength-bar-container">
+        <div class="strength-bar" style="width:23%; background:#90EE90;"></div>
+        <span class="strength-label">0.23</span>
+      </div>
+      <div class="meta">
+        Evolutions: 1 &middot; Created: 2026-02-17
+      </div>
+      <div class="tags"><span class="tag">evolution</span> <span class="tag">metabolic-skill-ecosystem</span> <span class="tag">autonomous</span> <span class="tag">reversible-trial-chamber</span> <span class="tag">embeddings</span></div>
+      
+    </div>
+  </div>
+  <div class="generated">Generated by Dream Weaver Engine v3.0.0 &middot; Auto-refreshes every 5 min</div>
+</body>
+</html>

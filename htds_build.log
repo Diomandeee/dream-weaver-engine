@@ -1,0 +1,52 @@
+Building HTDS...
+  L0: Building leaves from pruning audit...
+      → 25,006 leaves
+  L2: Aggregating sessions...
+      → 1,451 sessions, 25,006 edges
+  L4: Classifying domains...
+      → 8 domains, 1,450 edges
+  L5: Building root manifold...
+      → 1 root node
+  ⟳  Running IRCP propagation...
+      → done
+
+╔══════════════════════════════════════════════════════════════╗
+║      HIERARCHICAL TOPOLOGICAL DATA STRUCTURE (HTDS)        ║
+╚══════════════════════════════════════════════════════════════╝
+
+  L5 Root          nodes:      1  density:0.693  fresh:0.368  signal:1.000
+  L4 Domains       nodes:      8  density:0.693  fresh:0.368  signal:1.000
+  L2 Sessions      nodes:  1,451  density:0.688  fresh:0.368  signal:1.000
+  L0 Leaves        nodes: 25,006  density:0.683  fresh:0.368  signal:1.000
+
+  Total edges: 26,464
+
+  ┌─ DOMAIN BREAKDOWN ─────────────────────────────────────────┐
+  │ tie-evolution              d:0.69 leaves:11338 signal:1.00 sessions:878  █████████████  │
+  │ tooling                    d:0.69 leaves: 6126 signal:1.00 sessions:234  █████████████  │
+  │ app-development            d:0.66 leaves: 1843 signal:1.00 sessions: 60  █████████████  │
+  │ nko-linguistics            d:0.66 leaves: 1803 signal:1.00 sessions: 85  █████████████  │
+  │ dream-garden               d:0.68 leaves: 1586 signal:1.00 sessions:107  █████████████  │
+  │ comp-core                  d:0.64 leaves: 1541 signal:1.00 sessions: 57  ████████████  │
+  │ meta-process               d:0.70 leaves:  702 signal:1.00 sessions: 27  ██████████████  │
+  │ litrpg                     d:0.81 leaves:   60 signal:1.00 sessions:  2  ████████████████  │
+  └─────────────────────────────────────────────────────────────┘
+
+  ┌─ DREAM WEAVER FEED (top 5) ────────────────────────────────┐
+  │ session:dmax_task_20260201061347_630d27_  strength:0.331  │
+  │ session:dmax_task_20260201080347_dfffb6_  strength:0.331  │
+  │ session:dmax_task_20260201114048_99fe3e_  strength:0.331  │
+  │ session:dmax_task_20260201213817_c3240a_  strength:0.331  │
+  │ session:dmax_task_20260202140312_813b2b_  strength:0.331  │
+  └─────────────────────────────────────────────────────────────┘
+
+  ┌─ CHRONICLES FEED (content potential) ──────────────────────┐
+  │ tie-evolution              potential:7871.2  sessions:878  │
+  │ tooling                    potential:4223.5  sessions:234  │
+  │ app-development            potential:1224.6  sessions:60  │
+  │ nko-linguistics            potential:1195.9  sessions:85  │
+  │ dream-garden               potential:1082.1  sessions:107  │
+  │ comp-core                  potential:987.7  sessions:57  │
+  │ meta-process               potential:492.4  sessions:27  │
+  │ litrpg                     potential:48.5  sessions:2  │
+  └─────────────────────────────────────────────────────────────┘

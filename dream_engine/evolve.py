@@ -9,6 +9,9 @@ from typing import Optional
 from .models import Dream, GardenState, DreamStage
 from .together_client import KimiClient
 from .discord import DiscordNotifier
+from .notifier import Notifier
+from .idea_bridge import bridge_to_idea_vault
+from .garden_viz import generate_garden_html
 from .quality_gate import validate_evolution
 
 
@@ -159,7 +162,7 @@ def run_evolution_cycle(
     
     # Initialize clients
     kimi = KimiClient()
-    discord = DiscordNotifier()
+    discord = Notifier()
     
     evolutions = []
     blooms = []
@@ -220,7 +223,8 @@ def run_evolution_cycle(
             })
             
             if not dry_run:
-                discord.announce_bloom(dream.title, dream.essence, announcement)
+                discord.announce_bloom(dream.title, dream.essence, announcement, strength=dream.strength)
+                bridge_to_idea_vault(dream)
                 state.total_blooms += 1
     
     # Update state
@@ -239,6 +243,12 @@ def run_evolution_cycle(
             garden_summary = f"{len(state.dreams)} dreams, {state.total_blooms} blooms total"
             journal_entry = kimi.generate_journal_entry(garden_summary, evolutions)
             discord.post_journal_entry(journal_entry)
+        
+        # Regenerate visual garden
+        try:
+            generate_garden_html(state)
+        except Exception as e:
+            print(f"  [GardenViz] HTML generation skipped: {e}")
     
     # === RESEARCH PIPELINE INTEGRATION ===
     # Trigger research for dreams that crossed thresholds
@@ -350,7 +360,7 @@ def _run_evo_cube_cycle(state: GardenState, max_dreams: int, dry_run: bool) -> d
         print("  ⚠️ Depth axis disabled (no TOGETHER_API_KEY) — Gemini handles all synthesis")
     
     cube = EvoCube(enable_depth=enable_depth)
-    discord = DiscordNotifier()
+    discord = Notifier()
     
     # Run full cube cycle
     result = cube.full_cycle(state, max_dreams=max_dreams)
@@ -373,7 +383,8 @@ def _run_evo_cube_cycle(state: GardenState, max_dreams: int, dry_run: bool) -> d
         if not dry_run:
             dream = state.dreams.get(bloom["dream_id"])
             if dream:
-                discord.announce_bloom(dream.title, dream.essence, bloom["announcement"])
+                discord.announce_bloom(dream.title, dream.essence, bloom["announcement"], strength=dream.strength)
+                bridge_to_idea_vault(dream)
     
     if not dry_run:
         # Save state
@@ -387,6 +398,12 @@ def _run_evo_cube_cycle(state: GardenState, max_dreams: int, dry_run: bool) -> d
             garden_summary = f"{len(state.dreams)} dreams, {state.total_blooms} blooms total"
             journal_entry = cube.generate_journal_entry(garden_summary, evolutions)
             discord.post_journal_entry(journal_entry)
+        
+        # Regenerate visual garden
+        try:
+            generate_garden_html(state)
+        except Exception as e:
+            print(f"  [GardenViz] HTML generation skipped: {e}")
     
     # === RESEARCH PIPELINE (same as legacy) ===
     if not dry_run and evolutions:

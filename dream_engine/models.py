@@ -36,6 +36,9 @@ class Dream(BaseModel):
     tags: list[str] = Field(default_factory=list)
     source: str = "manual"  # manual, import, cross-pollination
     
+    # Enrichment
+    enriched: bool = False  # True once seed has been enriched with expanded context
+
     # Evolution history
     evolution_notes: list[str] = Field(default_factory=list)
     
