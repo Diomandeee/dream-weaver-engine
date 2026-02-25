@@ -213,6 +213,19 @@ def run_evolution_cycle(
         }
         evolutions.append(evolution_record)
         
+        # Notify stage changes (all channels)
+        if old_stage != dream.stage and not dry_run:
+            discord.announce_stage_change(
+                dream.title,
+                old_stage.value if hasattr(old_stage, 'value') else old_stage,
+                dream.stage.value if hasattr(dream.stage, 'value') else dream.stage,
+                dream.strength,
+            )
+
+        # Notify evolution milestones (every 10)
+        if dream.evolution_count > 0 and dream.evolution_count % 10 == 0 and not dry_run:
+            discord.announce_evolution_milestone(dream.title, dream.evolution_count, dream.strength)
+
         # Check for bloom
         if result.get("bloom_ready") and dream.stage == DreamStage.BLOOM:
             print(f"  🌸 BLOOM: {dream.title}")

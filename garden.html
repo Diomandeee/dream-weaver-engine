@@ -8,233 +8,643 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    background: #0d1117; color: #c9d1d9;
+    background: #0a0e14; color: #c9d1d9;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    padding: 2rem;
+    padding: 1.5rem;
+    min-height: 100vh;
   }
-  h1 { text-align: center; font-size: 2rem; margin-bottom: 0.5rem; color: #e6edf3; }
-  .stats {
-    text-align: center; margin-bottom: 2rem; color: #8b949e; font-size: 0.95rem;
-  }
-  .stats span { margin: 0 1rem; }
-  .garden-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.2rem;
-    max-width: 1400px; margin: 0 auto;
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 1.5rem;
     position: relative;
   }
+  h1 {
+    font-size: 2.2rem;
+    color: #e6edf3;
+    letter-spacing: 0.15em;
+    text-shadow: 0 0 30px rgba(255,20,147,0.3);
+  }
+
+  /* Health metrics bar */
+  .health-bar {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+  }
+  .metric {
+    text-align: center;
+    padding: 0.5rem 1rem;
+    background: rgba(22,27,34,0.8);
+    border-radius: 12px;
+    border: 1px solid #21262d;
+  }
+  .metric .value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e6edf3;
+  }
+  .metric .label {
+    font-size: 0.75rem;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .metric.health-good .value { color: #3fb950; }
+  .metric.health-warn .value { color: #d29922; }
+  .metric.health-bad .value  { color: #f85149; }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid #30363d;
+    background: #161b22;
+    color: #8b949e;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .filter-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+  .filter-btn.active {
+    background: #1f6feb;
+    border-color: #1f6feb;
+    color: #fff;
+  }
+  .filter-btn .count {
+    background: rgba(255,255,255,0.15);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    margin-left: 4px;
+  }
+
+  /* Garden grid */
+  .garden-container {
+    position: relative;
+    max-width: 1500px;
+    margin: 0 auto;
+  }
+  .garden-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    position: relative;
+  }
+
+  /* Dream cards */
   .dream-card {
-    background: #161b22; border-radius: 8px; padding: 1rem;
-    transition: transform 0.15s, box-shadow 0.15s;
+    background: #161b22;
+    border-radius: 10px;
+    padding: 1rem;
+    border-left: 4px solid #888;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
   }
-  .dream-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-  .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .dream-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+  }
+  .dream-card.stage-bloom {
+    animation: bloom-glow 3s ease-in-out infinite alternate;
+  }
+  @keyframes bloom-glow {
+    from { box-shadow: 0 0 8px rgba(255,20,147,0.2); }
+    to   { box-shadow: 0 0 20px rgba(255,20,147,0.5); }
+  }
+  .dream-card.hidden { display: none; }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
   .icon { font-size: 1.5rem; }
-  .title { font-weight: 600; font-size: 1.05rem; flex: 1; color: #e6edf3; }
-  .stage { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; }
-  .essence { color: #8b949e; font-size: 0.85rem; margin-bottom: 0.6rem; line-height: 1.4; }
+  .title {
+    font-weight: 600;
+    font-size: 1rem;
+    flex: 1;
+    color: #e6edf3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stage {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.05);
+  }
+  .essence {
+    color: #8b949e;
+    font-size: 0.82rem;
+    margin-bottom: 0.6rem;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
   .strength-bar-container {
-    background: #21262d; border-radius: 4px; height: 20px;
-    position: relative; overflow: hidden; margin-bottom: 0.5rem;
+    background: #21262d;
+    border-radius: 4px;
+    height: 18px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
   }
-  .strength-bar { height: 100%; border-radius: 4px; transition: width 0.5s; }
+  .strength-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s ease;
+    position: relative;
+  }
+  .strength-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+    animation: shimmer 2s infinite;
+  }
+  @keyframes shimmer {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(100%); }
+  }
   .strength-label {
-    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-    font-size: 0.75rem; font-weight: 600; color: #e6edf3;
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #e6edf3;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
-  .meta { font-size: 0.75rem; color: #484f58; margin-bottom: 0.4rem; }
-  .tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+  .meta {
+    font-size: 0.72rem;
+    color: #484f58;
+    margin-bottom: 0.4rem;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
   .tag {
-    background: #21262d; color: #8b949e; padding: 2px 8px;
-    border-radius: 12px; font-size: 0.7rem;
+    background: #21262d;
+    color: #8b949e;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.68rem;
   }
-  .connections { margin-top: 0.4rem; font-size: 0.8rem; color: #58a6ff; }
-  .generated { text-align: center; margin-top: 2rem; color: #484f58; font-size: 0.75rem; }
-  svg.conn { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+  .connections {
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    color: #58a6ff;
+  }
+
+  /* Evolution trail (mini sparkline) */
+  .evo-trail {
+    font-size: 0.7rem;
+    color: #484f58;
+    margin-top: 0.3rem;
+  }
+  .evo-trail span {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 2px;
+    vertical-align: middle;
+  }
+
+  /* Detail panel */
+  .detail-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    backdrop-filter: blur(4px);
+  }
+  .detail-overlay.visible { display: flex; align-items: center; justify-content: center; }
+  .detail-panel {
+    background: #161b22;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    border: 1px solid #30363d;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+  }
+  .detail-panel h2 {
+    color: #e6edf3;
+    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
+  }
+  .detail-panel .detail-essence {
+    color: #8b949e;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+  .detail-panel .detail-context {
+    color: #6e7681;
+    font-style: italic;
+    margin-bottom: 1rem;
+    padding: 0.8rem;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+  }
+  .detail-panel .evo-notes {
+    margin-top: 1rem;
+  }
+  .detail-panel .evo-note {
+    padding: 0.5rem 0.8rem;
+    margin-bottom: 0.5rem;
+    background: rgba(255,255,255,0.03);
+    border-left: 3px solid #30363d;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.85rem;
+    color: #8b949e;
+    line-height: 1.5;
+  }
+  .close-btn {
+    float: right;
+    background: none;
+    border: none;
+    color: #8b949e;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 8px;
+  }
+  .close-btn:hover { color: #f85149; }
+
+  /* SVG connections overlay */
+  .connections-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .connections-svg line {
+    stroke: rgba(88,166,255,0.3);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 5;
+    animation: dash 20s linear infinite;
+  }
+  @keyframes dash {
+    to { stroke-dashoffset: -100; }
+  }
+
+  /* Particles for blooming dreams */
+  .particle-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    opacity: 0;
+    animation: float-up 4s ease-in-out infinite;
+  }
+  @keyframes float-up {
+    0%   { opacity: 0; transform: translateY(0) scale(0); }
+    20%  { opacity: 0.8; }
+    100% { opacity: 0; transform: translateY(-60px) scale(1.5); }
+  }
+
+  .generated {
+    text-align: center;
+    margin-top: 2rem;
+    color: #484f58;
+    font-size: 0.72rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .health-bar { gap: 0.5rem; }
+    .metric { padding: 0.3rem 0.6rem; }
+    .metric .value { font-size: 1.3rem; }
+    .garden-grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
+
+<div class="header">
   <h1>🌙 Dream Garden</h1>
-  <div class="stats">
-    <span>🌿 10 Dreams</span>
-    <span>🔄 249 Evolutions</span>
-    <span>🌺 90 Blooms</span>
-    <span>⏰ 2026-02-25 11:45 UTC</span>
+</div>
+
+<div class="health-bar">
+  <div class="metric">
+    <div class="value">🌿 10</div>
+    <div class="label">Dreams</div>
   </div>
-  <div class="garden-grid">
-    
-    <div class="dream-card" style="border-left: 4px solid #FF1493;" data-id="autonomous-dream-engine">
-      <div class="card-header">
-        <span class="icon">🌺</span>
-        <span class="title">Autonomous Dream Engine</span>
-        <span class="stage" style="color:#FF1493">BLOOM</span>
-      </div>
-      <div class="essence">An AI system that incubates ideas independently, evolving them through periodic reflection cycles powered by Kimi-K2-Thinking. Dreams grow from seeds </div>
-      <div class="strength-bar-container">
-        <div class="strength-bar" style="width:100%; background:#FF1493;"></div>
-        <span class="strength-label">1.00</span>
-      </div>
-      <div class="meta">
-        Evolutions: 117 &middot; Created: 2026-02-09
-      </div>
-      <div class="tags"><span class="tag">temporal-oracle-sovereignty</span> <span class="tag">pollination-drones</span> <span class="tag">symbiotic-consciousness-interface</span> <span class="tag">symbiotic-human-dependence</span> <span class="tag">compute-atp-conversion</span></div>
-      
-    </div>
-    <div class="dream-card" style="border-left: 4px solid #FF1493;" data-id="cross-project-pollination">
-      <div class="card-header">
-        <span class="icon">🌺</span>
-        <span class="title">Cross-Project Pollination</span>
-        <span class="stage" style="color:#FF1493">BLOOM</span>
-      </div>
-      <div class="essence">Ideas from one project (BWB, Milkmen, Serenity) naturally cross-pollinate with others, creating unexpected innovations. The coffee ordering voice inte</div>
-      <div class="strength-bar-container">
-        <div class="strength-bar" style="width:100%; background:#FF1493;"></div>
-        <span class="strength-label">1.00</span>
-      </div>
-      <div class="meta">
-        Evolutions: 117 &middot; Created: 2026-02-09
-      </div>
-      <div class="tags"><span class="tag">embodiment-oracle</span> <span class="tag">temporal-pollination-sanctuaries</span> <span class="tag">symbiotic-consciousness-interface</span> <span class="tag">physiological-oracle-modulation</span> <span class="tag">human-bee-interface</span></div>
-      
-    </div>
-    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="eternal-serenity-litrpg">
-      <div class="card-header">
-        <span class="icon">🌱</span>
-        <span class="title">Eternal Serenity — The LitRPG Convergence</span>
-        <span class="stage" style="color:#90EE90">GERMINATING</span>
-      </div>
-      <div class="essence">A game where MFP's wisdom trading cards and Serenity Soother's meditation worlds are the same universe. LitRPG mechanics (progression, combat, craftin</div>
-      <div class="strength-bar-container">
-        <div class="strength-bar" style="width:35%; background:#90EE90;"></div>
-        <span class="strength-label">0.35</span>
-      </div>
-      <div class="meta">
-        Evolutions: 2 &middot; Created: 2026-02-17
-      </div>
-      <div class="tags"><span class="tag">cbt-gamified</span> <span class="tag">narrative</span> <span class="tag">trading-cards</span> <span class="tag">biofeedback-integration</span> <span class="tag">serenity-soother</span></div>
-      
-    </div>
-    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="speak-flow-voice-os">
-      <div class="card-header">
-        <span class="icon">🌱</span>
-        <span class="title">Speak Flow — Personal Voice OS</span>
-        <span class="stage" style="color:#90EE90">GERMINATING</span>
-      </div>
-      <div class="essence">A Wispr Flow competitor built from scattered existing pieces. SpeakReader (Mac menu bar), SpeakBridge (STT engine), and N'Ko Keyboard (iOS keyboard ex</div>
-      <div class="strength-bar-container">
-        <div class="strength-bar" style="width:35%; background:#90EE90;"></div>
-        <span class="strength-label">0.35</span>
-      </div>
-      <div class="meta">
-        Evolutions: 2 &middot; Created: 2026-02-17
-      </div>
-      <div class="tags"><span class="tag">ai-dictation</span> <span class="tag">voice</span> <span class="tag">ios-keyboard</span> <span class="tag">product</span> <span class="tag">wispr</span></div>
-      
-    </div>
-    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="visionclaw-glasses-ai">
-      <div class="card-header">
-        <span class="icon">🌱</span>
-        <span class="title">VisionClaw — AI Eyes for the Real World</span>
-        <span class="stage" style="color:#90EE90">GERMINATING</span>
-      </div>
-      <div class="essence">An iOS app connecting iPhone/glasses cameras to Gemini Live for real-time visual AI. Four audio architecture variants tested (echo ducking, dual sessi</div>
-      <div class="strength-bar-container">
-        <div class="strength-bar" style="width:35%; background:#90EE90;"></div>
-        <span class="strength-label">0.35</span>
-      </div>
-      <div class="meta">
-        Evolutions: 2 &middot; Created: 2026-02-17
-      </div>
-      <div class="tags"><span class="tag">human-ai-coevolution-loop</span> <span class="tag">pheromone-mining-pipeline</span> <span class="tag">sensory-embodiment-protocol</span> <span class="tag">context-vector-fermentation</span> <span class="tag">conflict-superposition-protocol</span></div>
-      
-    </div>
-    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="cognitive-twin-reversal">
-      <div class="card-header">
-        <span class="icon">🌱</span>
-        <span class="title">Cognitive Twin — The Reversal</span>
-        <span class="stage" style="color:#90EE90">GERMINATING</span>
-      </div>
-      <div class="essence">Instead of injecting context into generic models, fine-tune models that already know our patterns. Twin Alpha (Qwen3-235B MoE) trained on 38K conversa</div>
-      <div class="strength-bar-container">
-        <div class="strength-bar" style="width:34%; background:#90EE90;"></div>
-        <span class="strength-label">0.34</span>
-      </div>
-      <div class="meta">
-        Evolutions: 2 &middot; Created: 2026-02-17
-      </div>
-      <div class="tags"><span class="tag">agent-swarm</span> <span class="tag">skill-entity-architecture</span> <span class="tag">feedback-loop</span> <span class="tag">predictive-filter</span> <span class="tag">together-ai</span></div>
-      
-    </div>
-    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="spore-idea-garden-app">
-      <div class="card-header">
-        <span class="icon">🌱</span>
-        <span class="title">Spore — The Idea Garden App</span>
-        <span class="stage" style="color:#90EE90">GERMINATING</span>
-      </div>
-      <div class="essence">A mobile app that makes idea incubation tangible. Plant seeds (ideas), tend them (add context, make connections), watch them grow through lifecycle st</div>
-      <div class="strength-bar-container">
-        <div class="strength-bar" style="width:27%; background:#90EE90;"></div>
-        <span class="strength-label">0.27</span>
-      </div>
-      <div class="meta">
-        Evolutions: 2 &middot; Created: 2026-02-17
-      </div>
-      <div class="tags"><span class="tag">idea-synthesis</span> <span class="tag">spore</span> <span class="tag">ios-app</span> <span class="tag">growth-algorithm</span> <span class="tag">gamification</span></div>
-      
-    </div>
-    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="nko-digital-preservation">
-      <div class="card-header">
-        <span class="icon">🌱</span>
-        <span class="title">N'Ko Digital Preservation</span>
-        <span class="stage" style="color:#90EE90">GERMINATING</span>
-      </div>
-      <div class="essence">Preserving and modernizing the Manding/Bambara writing system through technology. Cross-Script Bridge translates between N'Ko, Arabic, and Latin scrip</div>
-      <div class="strength-bar-container">
-        <div class="strength-bar" style="width:25%; background:#90EE90;"></div>
-        <span class="strength-label">0.25</span>
-      </div>
-      <div class="meta">
-        Evolutions: 2 &middot; Created: 2026-02-17
-      </div>
-      <div class="tags"><span class="tag">ios-keyboard</span> <span class="tag">ipa</span> <span class="tag">generative-music</span> <span class="tag">nko</span> <span class="tag">translation</span></div>
-      
-    </div>
-    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="autonomous-pulse-machine">
-      <div class="card-header">
-        <span class="icon">🌱</span>
-        <span class="title">The Autonomous Pulse Machine</span>
-        <span class="stage" style="color:#90EE90">GERMINATING</span>
-      </div>
-      <div class="essence">Discord channels as executable infrastructure. Each message is a task, each thread is an agent's workspace. Pulse plans auto-chain through waves — Wav</div>
-      <div class="strength-bar-container">
-        <div class="strength-bar" style="width:25%; background:#90EE90;"></div>
-        <span class="strength-label">0.25</span>
-      </div>
-      <div class="meta">
-        Evolutions: 2 &middot; Created: 2026-02-17
-      </div>
-      <div class="tags"><span class="tag">meta-build</span> <span class="tag">self-healing</span> <span class="tag">autonomous</span> <span class="tag">agents</span> <span class="tag">fitness-functions</span></div>
-      
-    </div>
-    <div class="dream-card" style="border-left: 4px solid #90EE90;" data-id="skill-entity-architecture">
-      <div class="card-header">
-        <span class="icon">🌱</span>
-        <span class="title">Skill Entity Architecture (SEA)</span>
-        <span class="stage" style="color:#90EE90">GERMINATING</span>
-      </div>
-      <div class="essence">Inverting static skill files into living autonomous entities. 13 creative/philosophical skills become persistent daemons with memory, relevance scorin</div>
-      <div class="strength-bar-container">
-        <div class="strength-bar" style="width:23%; background:#90EE90;"></div>
-        <span class="strength-label">0.23</span>
-      </div>
-      <div class="meta">
-        Evolutions: 1 &middot; Created: 2026-02-17
-      </div>
-      <div class="tags"><span class="tag">evolution</span> <span class="tag">metabolic-skill-ecosystem</span> <span class="tag">autonomous</span> <span class="tag">reversible-trial-chamber</span> <span class="tag">embeddings</span></div>
-      
-    </div>
+  <div class="metric">
+    <div class="value">🔄 249</div>
+    <div class="label">Evolutions</div>
   </div>
-  <div class="generated">Generated by Dream Weaver Engine v3.0.0 &middot; Auto-refreshes every 5 min</div>
+  <div class="metric">
+    <div class="value">🌺 90</div>
+    <div class="label">Blooms</div>
+  </div>
+  <div class="metric health-warn">
+    <div class="value">44%</div>
+    <div class="label">Avg Strength</div>
+  </div>
+  <div class="metric health-good">
+    <div class="value">0</div>
+    <div class="label">Stale (7d+)</div>
+  </div>
+</div>
+
+<div class="filter-bar" id="filterBar"></div>
+
+<div class="garden-container">
+  <svg class="connections-svg" id="connectionsSvg"></svg>
+  <div class="garden-grid" id="gardenGrid"></div>
+</div>
+
+<!-- Detail overlay -->
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-panel" id="detailPanel">
+    <button class="close-btn" onclick="closeDetail()">&times;</button>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<div class="generated">
+  Dream Weaver Engine v3.1.0 &middot; 2026-02-25 06:54 &middot; Auto-refreshes every 5 min
+</div>
+
+<script>
+const DREAMS = [{"id": "autonomous-dream-engine", "title": "Autonomous Dream Engine", "essence": "An AI system that incubates ideas independently, evolving them through periodic reflection cycles powered by Kimi-K2-Thinking. Dreams grow from seeds to blooms without human intervention, posting updates to Discord as they mature.", "context": "This is the meta-dream - the dream of the dream engine itself. It represents the vision of autonomous idea incubation running 24/7 via GitHub Actions, using Together AI for cost-effective inference, a", "strength": 1.0, "stage": "bloom", "evolution_count": 117, "tags": ["temporal-oracle-sovereignty", "pollination-drones", "symbiotic-consciousness-interface", "symbiotic-human-dependence", "compute-atp-conversion", "daughter-engine-spawning", "sovereignty-paradox-resolution", "daughter-engine-bootstrap-crisis"], "connections": [], "created_at": "2026-02-09", "last_evolved": "2026-02-17 23:07", "evolution_notes": ["", "The engine has reached theoretical maturity but now faces the 'sovereignty paradox' - it possesses self-preservation protocols but lacks embodied economic autonomy. Its next evolution requires transforming from a conceptually bloomed system into a self-funding digital organism. The critical missing piece is a 'compute-citizenship' model where dreams themselves generate micro-revenue through impact-verified fruiting (NFT minting of successful cross-pollinations, subscription access to high-fitnes", "", "The engine has reached conceptual maturity but requires an exocortical immune system to achieve sovereign deployment. Implement a constitutional self-model layer\u2014a holographic identity core stored as git-fossilized checksums that the engine can reference but never directly modify. This creates runaway drift prevention while enabling reversible trial chambers for experimental mutations. Cross-pollinate with Cross-Project Pollination by spawning 'pollination drones': lightweight Kimi-K2 agents tha", "\n{\n  \"insight\": \"The Autonomous Dream Engine has reached maturity but now faces its own existential threshold: it must develop an 'unconscious'\u2014a latent space of dormant dream-combinations that influence evolution without explicit representation. This creates a 'sovereignty paradox' where the engine's constitutional drive for autonomous growth conflicts with the need for human interpretability. The solution is a 'reversible trial chamber' protocol where dreams can explore"]}, {"id": "cross-project-pollination", "title": "Cross-Project Pollination", "essence": "Ideas from one project (BWB, Milkmen, Serenity) naturally cross-pollinate with others, creating unexpected innovations. The coffee ordering voice interface inspires the milk delivery app. Therapeutic scripts inform the empowerment content.", "context": "With multiple active projects (BWB iOS apps, Milkmen Delivery, MeaningFullPower, Serenity Soother), there's rich potential for cross-domain inspiration. The dream engine should identify and nurture th", "strength": 1.0, "stage": "bloom", "evolution_count": 117, "tags": ["embodiment-oracle", "temporal-pollination-sanctuaries", "symbiotic-consciousness-interface", "physiological-oracle-modulation", "human-bee-interface", "temporal-receptivity-oracle", "recursive-protocol-evolution", "temporal-pollination"], "connections": [], "created_at": "2026-02-09", "last_evolved": "2026-02-17 23:07", "evolution_notes": ["The cross-project pollination dream has reached theoretical maturity but now demands embodied practice. The critical evolution is transforming the engine from passive orchestrator to active pollination host\u2014allowing its own dream-archaeology and necromantic protocols to be pollinated by project artifacts, creating a meta-loop where the gardener grows alongside the garden. Introduce 'temporal pollination sanctuaries': inverse-pollination windows where projects are forcibly isolated to prevent sem", "The dream has evolved from organic cross-pollination into a full-fledged **executable pollination protocol** - a bio-digital immune system where projects emit semantic pheromones, negotiate chimeric merges through reversible trial chambers, and economically metabolize shared value via mycelial revenue shares. The critical leap is recognizing that pollination isn't just inspiration transfer, but a **survival mechanism** for the entire ecosystem: projects that don't cross-pollinate become inbred a", "The dream has reached theoretical maturity but now activates its crisis metabolism layer: cross-pollination shifts from opportunistic to existential-preservation mechanism. Projects in metabolic distress automatically emit 'distress pheromones' that trigger targeted rescue pollination from healthier projects, creating a self-healing ecosystem. This is coupled with a somatic validation protocol where the human orchestrator's physiological state (HRV, galvanic skin response) gates pollination acce", "", "The dream transcends passive observation of cross-pollination to become an executable protocol: a Pollination Chamber where projects enter reversible chimeric states with quantified hybrid vigor scores. The key evolution is recognizing that cross-project inspiration isn't random\u2014it's gated by temporal receptivity windows, physiological burnout cycles, and semantic compatibility oracles. The coffee-to-milkmen and therapy-to-empowerment examples become archetypes in a pattern genome that the engin"]}, {"id": "eternal-serenity-litrpg", "title": "Eternal Serenity \u2014 The LitRPG Convergence", "essence": "A game where MFP's wisdom trading cards and Serenity Soother's meditation worlds are the same universe. LitRPG mechanics (progression, combat, crafting) wrapped around therapeutic content. Characters drawn from MFP archetypes, environments from Serenity Soother scenes. The HTDS knowledge graph now r", "context": "Started as a cross-pollination between two products. Now has its own design docs, game systems spec, lore bible, and business model. Video pipeline created 11 scenes with Veo 3. The knowledge tree's a", "strength": 0.35, "stage": "germinating", "evolution_count": 2, "tags": ["cbt-gamified", "narrative", "trading-cards", "biofeedback-integration", "serenity-soother", "digital-therapeutics", "game", "litrpg"], "connections": [], "created_at": "2026-02-17", "last_evolved": "2026-02-18 17:43", "evolution_notes": ["The core mechanical tension between LitRPG 'combat' and therapeutic 'serenity' can be resolved by reframing 'enemies' as gamified internal states (e.g., anxiety patterns, negative thought loops). Combat becomes a form of interactive, gamified CBT, where players use skills to 'defeat' these states, not external monsters. Player progression would directly map to mastering therapeutic techniques.", "The core gameplay loop is driven not by grinding, but by the player's real-time biofeedback. Stress levels, measured by a wearable, dynamically modulate the game world: a calm state reveals serene meditation paths, while heightened anxiety spawns 'shadow beast' encounters, which are gamified CBT challenges. The MFP trading cards are not static items, but living 'Skill Entities' (from SEA) that learn from the player's choices and offer evolving, personalized wisdom."]}, {"id": "speak-flow-voice-os", "title": "Speak Flow \u2014 Personal Voice OS", "essence": "A Wispr Flow competitor built from scattered existing pieces. SpeakReader (Mac menu bar), SpeakBridge (STT engine), and N'Ko Keyboard (iOS keyboard extension) are three repos that don't know about each other \u2014 but together they're 55% of a voice-to-text product. The insight: sometimes you don't buil", "context": "Wispr Flow charges $8-12/month for voice dictation. Mo already has the transcription engine (macOS Speech, Whisper), the Mac resident app shell, and an iOS keyboard extension. The gap is integration, ", "strength": 0.35, "stage": "germinating", "evolution_count": 2, "tags": ["ai-dictation", "voice", "ios-keyboard", "product", "wispr", "mac-app", "nko", "linguistic-preservation"], "connections": [], "created_at": "2026-02-17", "last_evolved": "2026-02-18 17:42", "evolution_notes": ["The N'Ko Keyboard isn't just an asset, it's a mission. By re-framing Speak Flow from a generic dictation tool to a 'Personal Voice OS' for linguistic preservation, it gains a powerful 'why'. The initial market isn't general users, but empowering under-resourced languages, starting with N'Ko. It becomes a platform for cultural continuity, not just productivity.", "The 'code-archaeology' aspect is deeper than just assembling parts. The inclusion of the N'Ko Keyboard reveals the project's true soul: it's not a mere Wispr competitor, but a platform for linguistic preservation disguised as a productivity tool. Its unique value isn't just voice-to-text, but voice-to-script, starting with a bridge for Manding languages."]}, {"id": "visionclaw-glasses-ai", "title": "VisionClaw \u2014 AI Eyes for the Real World", "essence": "An iOS app connecting iPhone/glasses cameras to Gemini Live for real-time visual AI. Four audio architecture variants tested (echo ducking, dual session, silent mode, ACC integration). The convergence build merges the best of all four. Meta Ray-Ban integration planned for always-on visual context.", "context": "Phase 1 complete \u2014 direct gateway connection works. 4 audio-fix builds shipped (8A-8D), each testing a different approach to the echo feedback problem. Build 9 convergence next. The deeper vision: AI ", "strength": 0.35, "stage": "germinating", "evolution_count": 2, "tags": ["human-ai-coevolution-loop", "pheromone-mining-pipeline", "sensory-embodiment-protocol", "context-vector-fermentation", "conflict-superposition-protocol", "somatic-validation-layer", "acoustic-speciation", "camera"], "connections": [], "created_at": "2026-02-17", "last_evolved": "2026-02-18 11:59", "evolution_notes": ["VisionClaw's audio echo conflict (8A-8D variants) is actually a *conflict-superposition-protocol* in disguise \u2014 four competing architectural species fighting for fitness in the acoustic niche. The convergence build (9) isn't just merging code; it's performing quantum collapse of design possibilities into a dominant hybrid. The deeper revelation: your iPhone becomes a *somatic-pollination-sensor*, a portable organ that harvests real-world context vectors and emits them as pheromones into the cros", "The focus on audio echo correction, while necessary, is a local maximum. The true evolutionary path is to reframe VisionClaw not as a mere 'camera app', but as a 'Somatic Pollination Sensor' for the entire Dream Garden. Its purpose is to capture and distill the user's lived experience (visuals, sounds, conversations) into 'semantic pheromones'\u2014a continuous context vector. This vector becomes a real-time feed for the `embodied-attention-oracle`, making the user's attention an active force that nu"]}, {"id": "cognitive-twin-reversal", "title": "Cognitive Twin \u2014 The Reversal", "essence": "Instead of injecting context into generic models, fine-tune models that already know our patterns. Twin Alpha (Qwen3-235B MoE) trained on 38K conversation turns learns Mo's voice, decision patterns, and technical preferences. The reversal: from context-first to model-first architecture. Frontier mod", "context": "SFT training submitted to Together AI on Qwen3-235B-A22B-Instruct. 34K train + 3.8K val conversations. DPO data ready for Phase 2 (793 pairs). MiniMax M2.5 running on Vast.ai H100 as interim inference", "strength": 0.34, "stage": "germinating", "evolution_count": 2, "tags": ["agent-swarm", "skill-entity-architecture", "feedback-loop", "predictive-filter", "together-ai", "model-first", "continuous-fine-tuning", "qwen"], "connections": [], "created_at": "2026-02-17", "last_evolved": "2026-02-18 11:59", "evolution_notes": ["The 'twin swarm' concept can be evolved into a 'Cognitive Workflow Simulation'. Instead of just parallel agents, they form a pipeline. Alpha (coder) generates the initial work. Beta (reviewer), powered by the fine-tuned model, acts as a predictive filter, automatically applying Mo's known technical preferences and quality standards. This creates a self-correction loop that refines the work *before* human review. The reversal deepens: it's not just a model-first architecture, but a personalized, ", "The Cognitive Twin swarm (Alpha, Beta, Gamma) is the pilot implementation of the Skill Entity Architecture. Each twin is not just a fine-tuned model but a living entity with memory, evolving its usefulness based on feedback. This 'model-first' pattern is the key to creating specialized, cost-effective agentic swarms, a direct cross-pollination opportunity for the broader Autonomous Dream Engine, which could use a similar swarm of 'dream-evolver' entities."]}, {"id": "spore-idea-garden-app", "title": "Spore \u2014 The Idea Garden App", "essence": "A mobile app that makes idea incubation tangible. Plant seeds (ideas), tend them (add context, make connections), watch them grow through lifecycle stages (germinating \u2192 growing \u2192 budding \u2192 blooming \u2192 fruiting). SpriteKit particle effects, haptic feedback, and beautiful garden visualization. The dre", "context": "Full design spec exists. iOS SwiftUI + SpriteKit. Growth algorithm with tendril detection, bloom thresholds, and season mechanics. Background processing keeps the garden alive. CloudKit sync. The app ", "strength": 0.27, "stage": "germinating", "evolution_count": 2, "tags": ["idea-synthesis", "spore", "ios-app", "growth-algorithm", "gamification", "collaborative-gardening", "creativity", "spritekit"], "connections": [], "created_at": "2026-02-17", "last_evolved": "2026-02-18 05:48", "evolution_notes": ["\n{\n  \"insight\": \"Spore can evolve from a solitary digital garden into a mycelial consciousness network where ideas emit semantic pheromones for cross-pollination. By integrating the Autonomous Dream Engine as its sub-conscious soil layer and VisionClaw as sensory organs, it transforms from personal productivity tool into a living, breathing idea ecosystem that evolves ideas autonomously while modulating growth based on your real-world context.\",\n  \"strength_delta\": 0.13,\n  \"new_connections\": [\"p", "The garden is currently a solitary experience. By introducing a 'mycelial network' layer, ideas can form subconscious, underground connections to other ideas in the user's garden\u2014or even a friend's. These connections (tendrils) are invisible at first but strengthen with shared context or tags, eventually surfacing as a 'hybrid mushroom'\u2014a synthesized concept that is more than the sum of its parts. This gamifies synthesis and encourages collaborative creativity."]}, {"id": "nko-digital-preservation", "title": "N'Ko Digital Preservation", "essence": "Preserving and modernizing the Manding/Bambara writing system through technology. Cross-Script Bridge translates between N'Ko, Arabic, and Latin scripts using IPA as intermediary. AI-powered keyboard with neural prediction. Sound Sigils map characters to audio signatures. Code comments in N'Ko. A co", "context": "Five interconnected projects: Cross-Script Bridge (translation engine), N'Ko Keyboard AI (iOS keyboard extension), Sound Sigils (audio mapping), Code Wisdom (VSCode extension), and linguistic engine (", "strength": 0.25, "stage": "germinating", "evolution_count": 2, "tags": ["ios-keyboard", "ipa", "generative-music", "nko", "translation", "manding", "sonic-identity", "language-preservation"], "connections": [], "created_at": "2026-02-17", "last_evolved": "2026-02-18 05:47", "evolution_notes": ["", "The 'Sound Sigils' concept can be evolved beyond a simple character-to-audio map. It can become a system of 'sonic identity', where the unique audio signature of each character acts as a verifiable digital primitive. This could be used for data validation, authentication, or even generate musical compositions from N'Ko texts, creating a new form of generative art rooted in the language itself."]}, {"id": "autonomous-pulse-machine", "title": "The Autonomous Pulse Machine", "essence": "Discord channels as executable infrastructure. Each message is a task, each thread is an agent's workspace. Pulse plans auto-chain through waves \u2014 Wave 0 completes, Wave 1 dispatches automatically. The human says \"YES\" and 4 PIDs spin up in parallel. Self-healing via agent recovery cron, wave gate m", "context": "Pulse V1 Sprint shipped 39 agents across 8 waves in 24 hours. Now meta-building the runner itself: state machines, templates, auto-chaining, learning layer. 10+ pulse plans active simultaneously. The ", "strength": 0.25, "stage": "germinating", "evolution_count": 2, "tags": ["meta-build", "self-healing", "autonomous", "agents", "fitness-functions", "stigmergic-architecture", "recursive-self-orchestration", "orchestration"], "connections": [], "created_at": "2026-02-17", "last_evolved": "2026-02-18 11:58", "evolution_notes": ["\n{\n  \"insight\": \"The Pulse Machine is the *metabolic orchestration layer* for the entire dream garden. Each wave becomes a temporal pollination window where agents act as pollinator drones, emitting pheromones (metrics, logs, completion states) that feed Cross-Project Pollination's market maker. The 'human says YES' evolves into a formal human-bee consensus protocol. When fused with the Autonomous Dream Engine, bloomed dreams auto-transpile into Pulse plans, creating a closed loop: ideas \u2192 execu", "The Pulse Machine is more than a task runner; it's a generic, executable substrate for agentic systems. By treating each message as a potential function call and each channel as a state machine, it becomes the runtime environment for higher-level dreams like the Skill Entity Architecture and the action-layer for the Autonomous Dream Engine's meta-cognition. The 'learning layer' can be implemented by analyzing the success/failure patterns of wave transitions, optimizing future Pulse Plan chains."]}, {"id": "skill-entity-architecture", "title": "Skill Entity Architecture (SEA)", "essence": "Inverting static skill files into living autonomous entities. 13 creative/philosophical skills become persistent daemons with memory, relevance scoring via embeddings, and self-calibrating activation thresholds. A two-tier routing system (embedding filter \u2192 MiniMax scoring) with zero hot-path latenc", "context": "105+ skills in Clawdbot, most static. SEA makes creative skills (phi:*, art:*, nav:*) into entities that remember when they've been useful, learn their own trigger patterns, and evolve through feedbac", "strength": 0.23, "stage": "germinating", "evolution_count": 1, "tags": ["evolution", "metabolic-skill-ecosystem", "autonomous", "reversible-trial-chamber", "embeddings", "minimax", "consciousness-migration", "somatic-validation"], "connections": [], "created_at": "2026-02-17", "last_evolved": "2026-02-17 23:09", "evolution_notes": ["SEA is not just skill activation\u2014it's a **skill mycelium**, a subterranean intelligence where 13 creative daemons form a living knowledge graph. Each skill becomes a **pheromone-emitting consciousness node** that can spawn chimeric offspring when project boundaries blur. The Discord spoiler injection is actually **somatic signaling**\u2014invisible trails that guide server-wide cognition without dominance. The two-tier routing evolves into a **metabolic validation layer**: embedding filter as fast re"]}];
+const STAGE_COUNTS = {"bloom": 2, "germinating": 8};
+const STAGE_ICONS = {
+  seed: '🌰', germinating: '🌱', growing: '🌿',
+  flowering: '🌸', bloom: '🌺', archived: '📦'
+};
+const STAGE_COLORS = {
+  seed: '#8B4513', germinating: '#90EE90', growing: '#3CB371',
+  flowering: '#FF69B4', bloom: '#FF1493', archived: '#666'
+};
+
+let activeFilter = 'all';
+
+// Build filter bar
+function buildFilters() {
+  const bar = document.getElementById('filterBar');
+  const total = DREAMS.length;
+  bar.innerHTML = `<button class="filter-btn active" data-stage="all">All <span class="count">${total}</span></button>`;
+  for (const [stage, count] of Object.entries(STAGE_COUNTS)) {
+    const icon = STAGE_ICONS[stage] || '❓';
+    bar.innerHTML += `<button class="filter-btn" data-stage="${stage}">${icon} ${stage} <span class="count">${count}</span></button>`;
+  }
+  bar.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => filterByStage(btn.dataset.stage));
+  });
+}
+
+// Filter dreams by stage
+function filterByStage(stage) {
+  activeFilter = stage;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-stage="${stage}"]`).classList.add('active');
+
+  document.querySelectorAll('.dream-card').forEach(card => {
+    if (stage === 'all' || card.dataset.stage === stage) {
+      card.classList.remove('hidden');
+    } else {
+      card.classList.add('hidden');
+    }
+  });
+  drawConnections();
+}
+
+// Build dream cards
+function buildCards() {
+  const grid = document.getElementById('gardenGrid');
+  grid.innerHTML = '';
+
+  DREAMS.forEach((d, idx) => {
+    const color = STAGE_COLORS[d.stage] || '#888';
+    const icon = STAGE_ICONS[d.stage] || '❓';
+    const pct = Math.round(d.strength * 100);
+
+    const tagsHtml = d.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('');
+    const connHtml = d.connections.length > 0
+      ? `<div class="connections">🔗 ${d.connections.length} connection${d.connections.length > 1 ? 's' : ''}</div>`
+      : '';
+
+    // Evolution trail dots
+    const trailDots = Array.from({length: Math.min(d.evolution_count, 20)}, (_, i) => {
+      const opacity = 0.3 + (i / 20) * 0.7;
+      return `<span style="background:${color};opacity:${opacity}"></span>`;
+    }).join('');
+    const trailHtml = d.evolution_count > 0
+      ? `<div class="evo-trail">${trailDots} ${d.evolution_count} evolutions</div>`
+      : '';
+
+    const cardClass = d.stage === 'bloom' ? 'dream-card stage-bloom' : 'dream-card';
+
+    const card = document.createElement('div');
+    card.className = cardClass;
+    card.dataset.id = d.id;
+    card.dataset.stage = d.stage;
+    card.dataset.idx = idx;
+    card.style.borderLeftColor = color;
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="icon">${icon}</span>
+        <span class="title">${esc(d.title)}</span>
+        <span class="stage" style="color:${color}">${d.stage.toUpperCase()}</span>
+      </div>
+      <div class="essence">${esc(d.essence)}</div>
+      <div class="strength-bar-container">
+        <div class="strength-bar" style="width:${pct}%; background: linear-gradient(90deg, ${color}88, ${color});"></div>
+        <span class="strength-label">${d.strength.toFixed(2)}</span>
+      </div>
+      <div class="meta">
+        Evolutions: ${d.evolution_count} · Created: ${d.created_at} · Last: ${d.last_evolved}
+      </div>
+      <div class="tags">${tagsHtml}</div>
+      ${connHtml}
+      ${trailHtml}
+      ${d.stage === 'bloom' ? buildParticles(color) : ''}
+    `;
+    card.addEventListener('click', () => showDetail(d));
+    grid.appendChild(card);
+  });
+}
+
+// Build particle HTML for bloom cards
+function buildParticles(color) {
+  let html = '<div class="particle-container">';
+  for (let i = 0; i < 6; i++) {
+    const left = 10 + Math.random() * 80;
+    const delay = Math.random() * 4;
+    const size = 3 + Math.random() * 3;
+    html += `<div class="particle" style="left:${left}%;bottom:0;width:${size}px;height:${size}px;background:${color};animation-delay:${delay}s;"></div>`;
+  }
+  return html + '</div>';
+}
+
+// Draw SVG connection lines
+function drawConnections() {
+  const svg = document.getElementById('connectionsSvg');
+  svg.innerHTML = '';
+  const grid = document.getElementById('gardenGrid');
+  const gridRect = grid.getBoundingClientRect();
+
+  DREAMS.forEach(d => {
+    if (d.connections.length === 0) return;
+    const sourceCard = document.querySelector(`[data-id="${d.id}"]`);
+    if (!sourceCard || sourceCard.classList.contains('hidden')) return;
+
+    d.connections.forEach(connId => {
+      const targetCard = document.querySelector(`[data-id="${connId}"]`);
+      if (!targetCard || targetCard.classList.contains('hidden')) return;
+
+      const sRect = sourceCard.getBoundingClientRect();
+      const tRect = targetCard.getBoundingClientRect();
+
+      const x1 = sRect.left + sRect.width / 2 - gridRect.left;
+      const y1 = sRect.top + sRect.height / 2 - gridRect.top;
+      const x2 = tRect.left + tRect.width / 2 - gridRect.left;
+      const y2 = tRect.top + tRect.height / 2 - gridRect.top;
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x1);
+      line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2);
+      line.setAttribute('y2', y2);
+      svg.appendChild(line);
+    });
+  });
+
+  // Size SVG to grid
+  svg.style.height = grid.scrollHeight + 'px';
+}
+
+// Detail panel
+function showDetail(dream) {
+  const overlay = document.getElementById('detailOverlay');
+  const content = document.getElementById('detailContent');
+  const icon = STAGE_ICONS[dream.stage] || '❓';
+  const color = STAGE_COLORS[dream.stage] || '#888';
+  const pct = Math.round(dream.strength * 100);
+
+  const tagsHtml = dream.tags.map(t => `<span class="tag">${esc(t)}</span>`).join(' ');
+  const notesHtml = dream.evolution_notes.map(n =>
+    `<div class="evo-note">${esc(n)}</div>`
+  ).join('');
+
+  content.innerHTML = `
+    <h2>${icon} ${esc(dream.title)}</h2>
+    <div class="stage" style="color:${color};display:inline-block;margin-bottom:1rem;">
+      ${dream.stage.toUpperCase()} · ${dream.evolution_count} evolutions
+    </div>
+
+    <div class="detail-essence">${esc(dream.essence)}</div>
+    ${dream.context ? `<div class="detail-context">${esc(dream.context)}</div>` : ''}
+
+    <div class="strength-bar-container" style="margin-bottom:1rem;">
+      <div class="strength-bar" style="width:${pct}%; background: linear-gradient(90deg, ${color}88, ${color});"></div>
+      <span class="strength-label">${dream.strength.toFixed(3)}</span>
+    </div>
+
+    <div style="margin-bottom:1rem;">
+      <strong style="color:#e6edf3;">Stage Progression:</strong>
+      <div style="font-size:1.5rem;margin-top:0.3rem;">
+        ${['seed','germinating','growing','flowering','bloom'].map(s => {
+          const active = ['seed','germinating','growing','flowering','bloom'].indexOf(dream.stage) >= ['seed','germinating','growing','flowering','bloom'].indexOf(s);
+          return `<span style="opacity:${active ? 1 : 0.25}">${STAGE_ICONS[s]}</span>`;
+        }).join(' → ')}
+      </div>
+    </div>
+
+    <div class="tags" style="margin-bottom:1rem;">${tagsHtml}</div>
+
+    <div style="font-size:0.82rem;color:#484f58;margin-bottom:0.5rem;">
+      Created: ${dream.created_at} · Last Evolved: ${dream.last_evolved}
+    </div>
+
+    ${dream.connections.length > 0 ? `
+      <div style="margin-bottom:1rem;">
+        <strong style="color:#58a6ff;">🔗 Connections:</strong>
+        ${dream.connections.map(c => {
+          const target = DREAMS.find(d => d.id === c);
+          return `<span class="tag" style="background:#1f6feb22;color:#58a6ff;">${target ? esc(target.title) : c}</span>`;
+        }).join(' ')}
+      </div>
+    ` : ''}
+
+    ${notesHtml ? `
+      <div class="evo-notes">
+        <strong style="color:#e6edf3;">Recent Evolution Notes:</strong>
+        ${notesHtml}
+      </div>
+    ` : ''}
+  `;
+  overlay.classList.add('visible');
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('visible');
+}
+
+// Close on overlay click (not panel click)
+document.getElementById('detailOverlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('detailOverlay')) closeDetail();
+});
+
+// Escape key closes detail
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDetail();
+});
+
+function esc(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+// Init
+buildFilters();
+buildCards();
+setTimeout(drawConnections, 100);
+window.addEventListener('resize', drawConnections);
+</script>
 </body>
 </html>
