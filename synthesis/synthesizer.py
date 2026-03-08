@@ -16,7 +16,7 @@ import asyncio
 from datetime import datetime
 from together import Together
 
-MODEL = "moonshotai/Kimi-K2-Thinking"
+MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
 
 SYSTEM_PROMPT = """You are a Prompt Synthesizer - a preprocessing layer that enriches user messages before they reach the main AI assistant.
 

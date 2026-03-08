@@ -17,7 +17,7 @@ from typing import Optional
 from together import Together
 
 
-MODEL = "moonshotai/Kimi-K2-Thinking"
+MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
 
 
 class ReportGenerator:

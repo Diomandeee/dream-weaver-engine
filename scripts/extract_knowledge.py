@@ -25,7 +25,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from together import Together
 
 MEMORY_DB = PROJECT_ROOT / "memory" / "kimi_memory.db"
-MODEL = "moonshotai/Kimi-K2-Thinking"
+MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
 
 # Extraction prompt for knowledge triples
 EXTRACTION_PROMPT = """You are a knowledge extraction engine. Extract factual relationships from the conversation.
