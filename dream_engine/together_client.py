@@ -1,16 +1,16 @@
-"""Together AI client for Kimi-K2-Thinking."""
+"""Together AI client for Llama-3.3-70B-Instruct-Turbo."""
 
 import os
 from together import Together
 from typing import Optional
 
 
-# Kimi-K2-Thinking - 256K context, great for deep reasoning
-MODEL = "moonshotai/Kimi-K2-Thinking"
+# Llama-3.3-70B-Instruct-Turbo - reliable serverless model on Together AI
+MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
 
 
 class KimiClient:
-    """Client for Kimi-K2-Thinking via Together AI."""
+    """Client for Llama-3.3-70B-Instruct-Turbo via Together AI."""
     
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.environ.get("TOGETHER_API_KEY")
@@ -25,7 +25,7 @@ class KimiClient:
         max_tokens: int = 2048,
         temperature: float = 0.8,
     ) -> str:
-        """Generate a response from Kimi-K2-Thinking."""
+        """Generate a response from Llama-3.3-70B-Instruct-Turbo."""
         
         response = self.client.chat.completions.create(
             model=MODEL,
