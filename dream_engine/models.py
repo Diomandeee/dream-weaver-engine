@@ -13,6 +13,8 @@ class DreamStage(str, Enum):
     GROWING = "growing"
     FLOWERING = "flowering"
     BLOOM = "bloom"
+    ACTUATING = "actuating"  # Bloom dispatched as executable task
+    SHIPPED = "shipped"  # Task completed, dream realized
     ARCHIVED = "archived"
 
 
@@ -41,6 +43,11 @@ class Dream(BaseModel):
 
     # Evolution history
     evolution_notes: list[str] = Field(default_factory=list)
+
+    # Action dispatch tracking
+    dispatched_task_id: Optional[str] = None  # mac_tasks UUID when dispatched
+    dispatched_at: Optional[datetime] = None
+    shipped_at: Optional[datetime] = None  # When the task completed successfully
     
     def get_stage(self) -> DreamStage:
         """Determine stage based on strength."""

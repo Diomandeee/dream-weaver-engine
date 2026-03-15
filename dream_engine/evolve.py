@@ -13,6 +13,8 @@ from .notifier import Notifier
 from .idea_bridge import bridge_to_idea_vault
 from .garden_viz import generate_garden_html
 from .quality_gate import validate_evolution
+from .action_dispatcher import dispatch_bloomed_dreams
+from .supabase_sync import sync_garden_to_supabase
 
 
 STATE_FILE = Path("state/dreams.json")
@@ -343,12 +345,44 @@ def run_evolution_cycle(
         except Exception as e:
             print(f"  [Research] Pipeline skipped: {e}")
     # === END RESEARCH PIPELINE ===
-    
-    print(f"✅ Evolution complete: {len(evolutions)} evolved, {len(blooms)} bloomed")
-    
+
+    # === ACTION DISPATCH — convert blooms to executable tasks ===
+    dispatched = []
+    if not dry_run:
+        try:
+            dispatched = dispatch_bloomed_dreams(state, max_dispatch=3, min_strength=0.75)
+            if dispatched:
+                print(f"  🚀 Action Dispatch: {len(dispatched)} dreams → mac_tasks queue")
+                # Update dream stages for dispatched dreams
+                for d_result in dispatched:
+                    dream_id = d_result.get("media_context", {})
+                    if isinstance(dream_id, str):
+                        import json as _json
+                        dream_id = _json.loads(dream_id)
+                    did = dream_id.get("dream_id") if isinstance(dream_id, dict) else None
+                    if did and did in state.dreams:
+                        state.dreams[did].dispatched_task_id = d_result.get("task_id")
+                        state.dreams[did].dispatched_at = datetime.utcnow()
+                save_state(state)
+        except Exception as e:
+            print(f"  [ActionDispatch] Skipped: {e}")
+    # === END ACTION DISPATCH ===
+
+    # === SUPABASE SYNC ===
+    if not dry_run:
+        try:
+            sync_result = sync_garden_to_supabase(state)
+            if sync_result.get("synced"):
+                print(f"  ☁️ Supabase: {sync_result['synced']} dreams synced")
+        except Exception as e:
+            print(f"  [SupaSync] Skipped: {e}")
+
+    print(f"✅ Evolution complete: {len(evolutions)} evolved, {len(blooms)} bloomed, {len(dispatched)} dispatched")
+
     return {
         "evolutions": evolutions,
         "blooms": blooms,
+        "dispatched": dispatched,
         "total_dreams": len(state.dreams),
     }
 
@@ -467,9 +501,40 @@ def _run_evo_cube_cycle(state: GardenState, max_dreams: int, dry_run: bool) -> d
             save_state(state)
         except Exception as e:
             print(f"  [Research] Pipeline skipped: {e}")
-    
-    print(f"✅ Evo Cube cycle complete: {len(evolutions)} evolved, {len(blooms)} bloomed")
-    
+
+    # === ACTION DISPATCH — convert blooms to executable tasks ===
+    dispatched = []
+    if not dry_run:
+        try:
+            dispatched = dispatch_bloomed_dreams(state, max_dispatch=3, min_strength=0.75)
+            if dispatched:
+                print(f"  🚀 Action Dispatch: {len(dispatched)} dreams → mac_tasks queue")
+                for d_result in dispatched:
+                    dream_id = d_result.get("media_context", {})
+                    if isinstance(dream_id, str):
+                        dream_id = json.loads(dream_id)
+                    did = dream_id.get("dream_id") if isinstance(dream_id, dict) else None
+                    if did and did in state.dreams:
+                        state.dreams[did].dispatched_task_id = d_result.get("task_id")
+                        state.dreams[did].dispatched_at = datetime.utcnow()
+                save_state(state)
+        except Exception as e:
+            print(f"  [ActionDispatch] Skipped: {e}")
+    # === END ACTION DISPATCH ===
+
+    result["dispatched"] = dispatched
+
+    # === SUPABASE SYNC ===
+    if not dry_run:
+        try:
+            sync_result = sync_garden_to_supabase(state)
+            if sync_result.get("synced"):
+                print(f"  ☁️ Supabase: {sync_result['synced']} dreams synced")
+        except Exception as e:
+            print(f"  [SupaSync] Skipped: {e}")
+
+    print(f"✅ Evo Cube cycle complete: {len(evolutions)} evolved, {len(blooms)} bloomed, {len(dispatched)} dispatched")
+
     return result
 
 
