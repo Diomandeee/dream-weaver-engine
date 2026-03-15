@@ -15,3 +15,9 @@ venv/
 
 # Local testing
 .local/
+
+# Database files (may contain secrets)
+*.db
+*.db.bak*
+memory/*.db
+memory/*.db.*
