@@ -1,16 +1,20 @@
-"""Gemini CLI client for dream evolution — FREE inference via gemini CLI tool."""
+"""Gemini client for dream evolution — uses HTTP API (works on GitHub Actions + local)."""
 
 import subprocess
 import json
 import os
+import urllib.request
+import urllib.error
+import ssl
 from typing import Optional
 
 
 class GeminiClient:
-    """Client for Gemini 3 via the gemini CLI tool (free, no API key needed)."""
+    """Client for Gemini via HTTP API or local CLI fallback."""
 
-    def __init__(self, model: str = "gemini-2.5-pro"):
+    def __init__(self, model: str = "gemini-2.5-flash"):
         self.model = model
+        self.api_key = os.environ.get("GOOGLE_API_KEY", "")
         self.cli_path = os.environ.get("GEMINI_CLI_PATH", "/opt/homebrew/bin/gemini")
 
     def generate(
@@ -20,9 +24,47 @@ class GeminiClient:
         max_tokens: int = 2048,
         temperature: float = 0.8,
     ) -> str:
-        """Generate a response using gemini CLI."""
-        full_prompt = f"{system}\n\n---\n\n{prompt}"
+        """Generate a response. Tries HTTP API first, falls back to CLI."""
+        if self.api_key:
+            return self._generate_api(prompt, system, max_tokens, temperature)
+        return self._generate_cli(prompt, system, max_tokens, temperature)
 
+    def _generate_api(self, prompt, system, max_tokens, temperature):
+        """Generate via Gemini HTTP API (works anywhere)."""
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "systemInstruction": {"parts": [{"text": system}]},
+            "generationConfig": {
+                "maxOutputTokens": max_tokens,
+                "temperature": temperature,
+            },
+        }
+
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(
+            url,
+            data=data,
+            headers={"Content-Type": "application/json"},
+        )
+
+        ctx = ssl.create_default_context()
+        with urllib.request.urlopen(req, context=ctx, timeout=120) as resp:
+            result = json.loads(resp.read())
+
+        candidates = result.get("candidates", [])
+        if not candidates:
+            raise RuntimeError(f"Gemini API returned no candidates: {json.dumps(result)[:300]}")
+
+        parts = candidates[0].get("content", {}).get("parts", [])
+        if not parts:
+            raise RuntimeError("Gemini API returned empty parts")
+
+        return parts[0].get("text", "").strip()
+
+    def _generate_cli(self, prompt, system, max_tokens, temperature):
+        """Generate via local gemini CLI (macOS only)."""
+        full_prompt = f"{system}\n\n---\n\n{prompt}"
         try:
             result = subprocess.run(
                 [self.cli_path, "-m", self.model, "-p", full_prompt],
@@ -35,8 +77,8 @@ class GeminiClient:
                 return result.stdout.strip()
             else:
                 raise RuntimeError(f"gemini CLI failed: {result.stderr[:200]}")
-        except subprocess.TimeoutExpired:
-            raise RuntimeError("gemini CLI timed out after 120s")
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+            raise RuntimeError(f"gemini CLI unavailable: {e}")
 
     def evolve_dream(self, dream_context: str, garden_context: str) -> dict:
         """Evolve a dream using Gemini's creative synthesis."""
